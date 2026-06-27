@@ -16,7 +16,11 @@ class MakeupAnalysis {
   });
 
   factory MakeupAnalysis.fromJson(Map<String, dynamic> json) {
-    String val(dynamic v) => (v is String) ? v : (v is Map) ? v.values.join('、') : '${v ?? ''}';
+    String val(dynamic v) => (v is String)
+        ? v
+        : (v is Map)
+        ? v.values.join('、')
+        : '${v ?? ''}';
     return MakeupAnalysis(
       base: val(json['底妆'] ?? json['base']),
       eyes: val(json['眼妆'] ?? json['eyes']),
@@ -36,6 +40,10 @@ class MakeupAnalysis {
       '唇妆': lips,
       '修容': contour,
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return toCategoryMap();
   }
 
   static final sample = MakeupAnalysis(
@@ -82,6 +90,18 @@ class MatchResult {
         orElse: () => Status.processing,
       ),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'created_at': createdAt.toIso8601String(),
+      'reference_image': referenceImagePath,
+      'selfie_image': selfieImagePath,
+      'result_image': resultImagePath,
+      'analysis': analysis?.toJson(),
+      'status': status.name,
+    };
   }
 
   static final sample = MatchResult(

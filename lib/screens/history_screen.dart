@@ -48,18 +48,12 @@ class HistoryScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     '还没有仿妆记录',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.neutral400,
-                    ),
+                    style: TextStyle(fontSize: 16, color: AppColors.neutral400),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '完成一次仿妆后，结果会出现在这里',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.neutral300,
-                    ),
+                    style: TextStyle(fontSize: 14, color: AppColors.neutral300),
                   ),
                 ],
               ),
@@ -155,9 +149,7 @@ class _HistoryCard extends StatelessWidget {
                   if (result.resultImagePath != null) {
                     provider.loadHistoryResult(result);
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ResultScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const ResultScreen()),
                     );
                   }
                 },

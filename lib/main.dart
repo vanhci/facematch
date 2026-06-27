@@ -17,7 +17,7 @@ class FaceMatchApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => MatchProvider(),
+      create: (_) => MatchProvider()..init(),
       child: MaterialApp(
         title: '颜摹',
         debugShowCheckedModeBanner: false,
@@ -38,11 +38,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final _pages = const [
-    HomeScreen(),
-    AnalysisScreen(),
-    HistoryScreen(),
-  ];
+  final _pages = const [HomeScreen(), AnalysisScreen(), HistoryScreen()];
 
   @override
   Widget build(BuildContext context) {

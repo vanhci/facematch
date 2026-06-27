@@ -9,6 +9,15 @@ import 'result_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  Future<void> _runMatch(BuildContext context, MatchProvider provider) async {
+    final nav = Navigator.of(context);
+    await provider.startMatch();
+    if (provider.error == null &&
+        (provider.analysis != null || provider.resultImage != null)) {
+      nav.push(MaterialPageRoute(builder: (_) => const ResultScreen()));
+    }
+  }
+
   void _showImagePicker(BuildContext context, bool isReference) {
     final provider = context.read<MatchProvider>();
     showModalBottomSheet(
@@ -86,88 +95,102 @@ class HomeScreen extends StatelessWidget {
         ),
         child: SafeArea(
           child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.gradientRose,
-                      borderRadius: BorderRadius.circular(12),
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.gradientRose,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.face_retouching_natural,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
-                    child: const Icon(Icons.face_retouching_natural,
-                        color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('颜摹', style: TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.w600,
-                          color: AppColors.neutral700)),
-                      Text('看见你的妆 · 复制你的美', style: TextStyle(
-                          fontSize: 12, color: AppColors.neutral400)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Cards
-            Expanded(
-              child: Consumer<MatchProvider>(
-                builder: (context, provider, _) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
+                    const SizedBox(width: 12),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 8),
-                        // Reference card
-                        Expanded(
-                          child: _ImageCard(
-                            title: '参考妆容',
-                            image: provider.referenceImage,
-                            label: '选妆容图',
-                            onTap: () => _showImagePicker(context, true),
-                            onClear: provider.referenceImage != null
-                                ? () => provider.clearReference()
-                                : null,
+                        Text(
+                          '颜摹',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.neutral700,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        // Selfie card
-                        Expanded(
-                          child: _ImageCard(
-                            title: '我的自拍',
-                            image: provider.selfieImage,
-                            label: '选自拍/拍照',
-                            onTap: () => _showImagePicker(context, false),
-                            onClear: provider.selfieImage != null
-                                ? () => provider.clearSelfie()
-                                : null,
+                        Text(
+                          '看见你的妆 · 复制你的美',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.neutral400,
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        // Button
-                        _buildMatchButton(context, provider),
-                        if (provider.error != null) ...[
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: _buildError(provider.error!),
-                          ),
-                        ],
-                        const SizedBox(height: 8),
                       ],
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              // Cards
+              Expanded(
+                child: Consumer<MatchProvider>(
+                  builder: (context, provider, _) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 8),
+                          // Reference card
+                          Expanded(
+                            child: _ImageCard(
+                              title: '参考妆容',
+                              image: provider.referenceImage,
+                              label: '选妆容图',
+                              onTap: () => _showImagePicker(context, true),
+                              onClear: provider.referenceImage != null
+                                  ? () => provider.clearReference()
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          // Selfie card
+                          Expanded(
+                            child: _ImageCard(
+                              title: '我的自拍',
+                              image: provider.selfieImage,
+                              label: '选自拍/拍照',
+                              onTap: () => _showImagePicker(context, false),
+                              onClear: provider.selfieImage != null
+                                  ? () => provider.clearSelfie()
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          // Button
+                          _buildMatchButton(context, provider),
+                          if (provider.error != null) ...[
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: _buildError(context, provider),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -184,24 +207,37 @@ class HomeScreen extends StatelessWidget {
           gradient: AppColors.gradientRose,
         ),
         child: Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    provider.isAnalyzing ? '正在分析妆容...' : '正在生成仿妆...',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Text(
-                provider.isAnalyzing ? '正在分析妆容...' : '正在生成仿妆...',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
+              Positioned(
+                right: 8,
+                child: TextButton(
+                  onPressed: provider.cancelGeneration,
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  child: const Text('取消'),
                 ),
               ),
             ],
@@ -215,17 +251,7 @@ class HomeScreen extends StatelessWidget {
       height: 56,
       child: ElevatedButton(
         onPressed: provider.canMatch
-            ? () async {
-                final nav = Navigator.of(context);
-                await provider.startMatch();
-                if (provider.analysis != null || provider.resultImage != null) {
-                  nav.push(
-                    MaterialPageRoute(
-                      builder: (_) => const ResultScreen(),
-                    ),
-                  );
-                }
-              }
+            ? () => _runMatch(context, provider)
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: provider.canMatch
@@ -244,15 +270,19 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildError(String error) {
+  Widget _buildError(BuildContext context, MatchProvider provider) {
+    final canRetry =
+        provider.canMatch &&
+        !provider.isAnalyzing &&
+        !provider.isGenerating &&
+        provider.error != '已取消生成';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.error.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -260,12 +290,28 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              error,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontSize: 13,
-              ),
+              provider.error!,
+              style: const TextStyle(color: AppColors.error, fontSize: 13),
             ),
+          ),
+          if (canRetry) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () => _runMatch(context, provider),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.error,
+                minimumSize: const Size(44, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text('重试'),
+            ),
+          ],
+          IconButton(
+            onPressed: provider.resetError,
+            icon: const Icon(Icons.close, size: 16),
+            color: AppColors.error,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
           ),
         ],
       ),
@@ -343,19 +389,29 @@ class _ImageCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(title, style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w500,
-                      color: Color(0xFF555555))),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF555555),
+                    ),
+                  ),
                   if (image != null && onClear != null)
                     GestureDetector(
                       onTap: onClear,
                       child: Container(
-                        width: 24, height: 24,
+                        width: 24,
+                        height: 24,
                         decoration: BoxDecoration(
                           color: Colors.grey.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.close, size: 12, color: Colors.white),
+                        child: const Icon(
+                          Icons.close,
+                          size: 12,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                 ],
@@ -380,68 +436,87 @@ class _ImageCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                  image != null
-                      ? GestureDetector(
-                          onTap: () => _showFullImage(context, image!),
-                          child: Image.file(image!, fit: BoxFit.cover),
-                        )
-                      : Container(
-                          color: AppColors.neutral50,
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.add_photo_alternate_outlined,
-                                    size: 32, color: AppColors.neutral300),
-                                const SizedBox(height: 6),
-                                Text(label, style: const TextStyle(
-                                    fontSize: 13, color: AppColors.neutral400)),
-                              ],
+                      image != null
+                          ? GestureDetector(
+                              onTap: () => _showFullImage(context, image!),
+                              child: Image.file(image!, fit: BoxFit.cover),
+                            )
+                          : Container(
+                              color: AppColors.neutral50,
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      size: 32,
+                                      color: AppColors.neutral300,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      label,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.neutral400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                      // Image close button (only when image selected)
+                      if (image != null && onClear != null)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: GestureDetector(
+                            onTap: onClear,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Colors.black26,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 13,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                  // Image close button (only when image selected)
-                  if (image != null && onClear != null)
-                    Positioned(
-                      top: 6, right: 6,
-                      child: GestureDetector(
-                        onTap: onClear,
-                        child: Container(
-                          width: 24, height: 24,
-                          decoration: BoxDecoration(
-                            color: Colors.black26,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.close, size: 13, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  // Solid white overlay label
-                  if (image != null)
-                    Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(6),
-                            topRight: Radius.circular(6),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            image != null ? title : '',
-                            style: const TextStyle(
-                              color: AppColors.warmBrown,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                      // Solid white overlay label
+                      if (image != null)
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 12,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                                topRight: Radius.circular(6),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                image != null ? title : '',
+                                style: const TextStyle(
+                                  color: AppColors.warmBrown,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                    ],
                   ),
                 ),
               ),

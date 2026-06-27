@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -23,6 +22,17 @@ class ComparisonSlider extends StatefulWidget {
 
 class _ComparisonSliderState extends State<ComparisonSlider> {
   double _position = 0.5;
+  bool _showHint = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() => _showHint = false);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,10 +47,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
           borderRadius: BorderRadius.circular(20),
         ),
         child: const Center(
-          child: Text(
-            '暂无对比图',
-            style: TextStyle(color: AppColors.neutral400),
-          ),
+          child: Text('暂无对比图', style: TextStyle(color: AppColors.neutral400)),
         ),
       );
     }
@@ -64,7 +71,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
                     width: width,
                     height: height,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (context, error, stackTrace) => Container(
                       color: AppColors.neutral200,
                       child: const Center(
                         child: Icon(Icons.image, color: AppColors.neutral400),
@@ -86,9 +93,8 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
                           width: width,
                           height: height,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: AppColors.neutral200,
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: AppColors.neutral200),
                         ),
                       ),
                     ),
@@ -101,6 +107,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
                       setState(() {
                         _position = (_position + details.delta.dx / width)
                             .clamp(0.05, 0.95);
+                        _showHint = false;
                       });
                     },
                     child: Stack(
@@ -111,10 +118,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
                             left: width * _position - 1,
                             top: 0,
                             bottom: 0,
-                            child: Container(
-                              width: 2,
-                              color: Colors.white,
-                            ),
+                            child: Container(width: 2, color: Colors.white),
                           ),
 
                         // Handle circle
@@ -156,6 +160,47 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
                             top: 12,
                             right: 12,
                             child: _buildLabel(widget.afterLabel!),
+                          ),
+                        if (hasBefore && hasAfter && _showHint)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 18,
+                            child: Center(
+                              child: AnimatedOpacity(
+                                opacity: _showHint ? 1 : 0,
+                                duration: const Duration(milliseconds: 250),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.swap_horiz,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        '左右滑动对比',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                       ],
                     ),

@@ -4,10 +4,10 @@ class AppColors {
   AppColors._();
 
   // Primary — Rose Gold (modern, feminine, sophisticated)
-  static const bgColor = Color(0xFFFAF0E9);    // 暖米白
-  static const primary = Color(0xFFF0708D);        // 玫瑰金主色
-  static const warmBrown = Color(0xFF5C4333);      // 暖棕文字
-  static const warmLight = Color(0xFFF5F2EF);      // 暖白卡片
+  static const bgColor = Color(0xFFFAF0E9); // 暖米白
+  static const primary = Color(0xFFF0708D); // 玫瑰金主色
+  static const warmBrown = Color(0xFF5C4333); // 暖棕文字
+  static const warmLight = Color(0xFFF5F2EF); // 暖白卡片
   static const primary50 = Color(0xFFFFF5F7);
   static const primary100 = Color(0xFFFFE0E6);
   static const primary200 = Color(0xFFFFB8C8);
@@ -18,8 +18,8 @@ class AppColors {
   static const primary700 = Color(0xFFB82242);
 
   // Neutral — Warm Grey
-  static const textMain = Color(0xFF2C2C2C);       // 主标题深灰
-  static const textSub = Color(0xFF8E8E93);        // 副标题浅灰
+  static const textMain = Color(0xFF2C2C2C); // 主标题深灰
+  static const textSub = Color(0xFF8E8E93); // 副标题浅灰
   static const neutral50 = Color(0xFFFCFAFA);
   static const neutral100 = Color(0xFFF5F5F5);
   static const neutral200 = Color(0xFFEEEEEE);
@@ -80,21 +80,64 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
       ),
       textTheme: const TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, height: 1.2, letterSpacing: -0.5, color: AppColors.neutral800),
-        displayMedium: TextStyle(fontSize: 26, fontWeight: FontWeight.w600, height: 1.25, color: AppColors.neutral800),
-        headlineLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, height: 1.3, color: AppColors.neutral800),
-        headlineMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.35, color: AppColors.neutral800),
-        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, height: 1.5, color: AppColors.neutral700),
-        bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, height: 1.5, color: AppColors.neutral600),
-        bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, height: 1.4, color: AppColors.neutral400),
-        labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, height: 1.2, color: AppColors.neutral700),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+          letterSpacing: -0.5,
+          color: AppColors.neutral800,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 26,
+          fontWeight: FontWeight.w600,
+          height: 1.25,
+          color: AppColors.neutral800,
+        ),
+        headlineLarge: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          height: 1.3,
+          color: AppColors.neutral800,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          height: 1.35,
+          color: AppColors.neutral800,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          height: 1.5,
+          color: AppColors.neutral700,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          height: 1.5,
+          color: AppColors.neutral600,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 1.4,
+          color: AppColors.neutral400,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+          color: AppColors.neutral700,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(99),
+          ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           elevation: 0,
           shadowColor: AppColors.primary,
@@ -105,7 +148,9 @@ class AppTheme {
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary200),
           minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(99),
+          ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
@@ -120,9 +165,14 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.neutral200, thickness: 0.5),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.neutral200,
+        thickness: 0.5,
+      ),
     );
   }
 }

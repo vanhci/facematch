@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/match_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/comparison_slider.dart';
@@ -88,6 +89,33 @@ class ResultScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _ActionCard(
+                        icon: Icons.ios_share_outlined,
+                        label: '分享',
+                        color: AppColors.primary500,
+                        onTap: () async {
+                          final resultImage = provider.resultImage;
+                          if (resultImage == null) return;
+
+                          try {
+                            await Share.shareXFiles([
+                              XFile(resultImage.path),
+                            ], text: '我的颜摹仿妆结果');
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('分享失败: $e'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ActionCard(
                         icon: Icons.refresh_outlined,
                         label: '重新选图',
                         color: AppColors.neutral500,
@@ -104,9 +132,7 @@ class ResultScreen extends StatelessWidget {
 
                 // Makeup analysis
                 if (provider.analysis != null)
-                  MakeupBreakdown(
-                    analysis: provider.analysis!.toCategoryMap(),
-                  ),
+                  MakeupBreakdown(analysis: provider.analysis!.toCategoryMap()),
               ],
             ),
           );

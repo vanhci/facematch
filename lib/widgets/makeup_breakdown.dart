@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -21,13 +22,12 @@ class MakeupBreakdown extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ...categories.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _CategoryCard(
-                title: entry.key,
-                description: entry.value,
-              ),
-            )),
+        ...categories.map(
+          (entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _CategoryCard(title: entry.key, description: entry.value),
+          ),
+        ),
       ],
     );
   }
@@ -79,27 +79,55 @@ class _CategoryCardState extends State<_CategoryCard>
     });
   }
 
+  Future<void> _copyDescription() async {
+    final text = '${widget.title}: ${widget.description}';
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('已复制分析内容'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
   IconData _icon(String title) {
     switch (title) {
-      case '底妆': return Icons.face_outlined;
-      case '眼妆': return Icons.visibility_outlined;
-      case '眉妆': return Icons.brush_outlined;
-      case '腮红': return Icons.favorite_outline;
-      case '唇妆': return Icons.water_drop_outlined;
-      case '修容': return Icons.tune_outlined;
-      default: return Icons.colorize_outlined;
+      case '底妆':
+        return Icons.face_outlined;
+      case '眼妆':
+        return Icons.visibility_outlined;
+      case '眉妆':
+        return Icons.brush_outlined;
+      case '腮红':
+        return Icons.favorite_outline;
+      case '唇妆':
+        return Icons.water_drop_outlined;
+      case '修容':
+        return Icons.tune_outlined;
+      default:
+        return Icons.colorize_outlined;
     }
   }
 
   Color _iconBg(String title) {
     switch (title) {
-      case '底妆': return const Color(0xFFFFE8EC);
-      case '眼妆': return const Color(0xFFFFF3D6);
-      case '眉妆': return const Color(0xFFE8F5E9);
-      case '腮红': return const Color(0xFFFFE8F0);
-      case '唇妆': return const Color(0xFFE3F2FD);
-      case '修容': return const Color(0xFFF3E5F5);
-      default: return AppColors.neutral100;
+      case '底妆':
+        return const Color(0xFFFFE8EC);
+      case '眼妆':
+        return const Color(0xFFFFF3D6);
+      case '眉妆':
+        return const Color(0xFFE8F5E9);
+      case '腮红':
+        return const Color(0xFFFFE8F0);
+      case '唇妆':
+        return const Color(0xFFE3F2FD);
+      case '修容':
+        return const Color(0xFFF3E5F5);
+      default:
+        return AppColors.neutral100;
     }
   }
 
@@ -107,6 +135,7 @@ class _CategoryCardState extends State<_CategoryCard>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _toggle,
+      onLongPress: _copyDescription,
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -135,27 +164,35 @@ class _CategoryCardState extends State<_CategoryCard>
               child: Row(
                 children: [
                   Container(
-                    width: 36, height: 36,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: _iconBg(widget.title),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(_icon(widget.title), size: 20, color: AppColors.warmBrown),
+                    child: Icon(
+                      _icon(widget.title),
+                      size: 20,
+                      color: AppColors.warmBrown,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(widget.title,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
-                            color: AppColors.warmBrown)),
+                    child: Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.warmBrown,
+                      ),
+                    ),
                   ),
                   Container(
-                    width: 28, height: 28,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          Colors.white,
-                          const Color(0xFFF5F5F5),
-                        ],
+                        colors: [Colors.white, const Color(0xFFF5F5F5)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -171,7 +208,11 @@ class _CategoryCardState extends State<_CategoryCard>
                     child: AnimatedRotation(
                       turns: _isExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 250),
-                      child: Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.neutral500),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 16,
+                        color: AppColors.neutral500,
+                      ),
                     ),
                   ),
                 ],

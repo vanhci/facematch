@@ -4,7 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../models/makeup_analysis.dart';
 
-class ApiService {
+abstract class MakeupApi {
+  Future<MakeupAnalysis> analyzeMakeup(File referenceImage);
+
+  Future<String> transferMakeup({
+    required File targetImage,
+    required String analysis,
+  });
+}
+
+class ApiService implements MakeupApi {
   // Production API endpoint via Cloudflare Tunnel
   static const _baseUrl = 'https://facematch.vanhci.top';
 
@@ -12,13 +21,16 @@ class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal()
-      : _dio = Dio(BaseOptions(
+    : _dio = Dio(
+        BaseOptions(
           baseUrl: _baseUrl,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 180),
-        ));
+        ),
+      );
 
   /// Analyze reference makeup image.
+  @override
   Future<MakeupAnalysis> analyzeMakeup(File referenceImage) async {
     try {
       final formData = FormData.fromMap({
@@ -33,21 +45,22 @@ class ApiService {
       final analysisStr = (analysisRaw is String)
           ? analysisRaw
           : (analysisRaw is Map)
-              ? jsonEncode(analysisRaw)
-              : analysisRaw.toString();
+          ? jsonEncode(analysisRaw)
+          : analysisRaw.toString();
       // Parse the JSON string from the API response
       final jsonStart = analysisStr.indexOf('{');
       final jsonEnd = analysisStr.lastIndexOf('}') + 1;
-      if (jsonStart >= 0 && jsonEnd > jsonStart) {
-        final jsonBody = analysisStr.substring(jsonStart, jsonEnd);
-        return MakeupAnalysis.fromJson(
-          jsonDecode(jsonBody) as Map<String, dynamic>,
-        );
+      if (jsonStart < 0 || jsonEnd <= jsonStart) {
+        throw const FormatException('AI 返回的数据格式异常，请重试');
       }
-      return MakeupAnalysis.fromJson({'底妆': '', '眼妆': '', '眉妆': '', '腮红': '', '唇妆': '', '修容': ''});
+
+      final jsonBody = analysisStr.substring(jsonStart, jsonEnd);
+      return MakeupAnalysis.fromJson(
+        jsonDecode(jsonBody) as Map<String, dynamic>,
+      );
     } on FormatException {
-      debugPrint('analyzeMakeup: AI returned malformed JSON, using defaults');
-      return MakeupAnalysis.fromJson({'底妆': '', '眼妆': '', '眉妆': '', '腮红': '', '唇妆': '', '修容': ''});
+      debugPrint('analyzeMakeup: AI returned malformed JSON');
+      throw const FormatException('AI 返回的数据格式异常，请重试');
     } catch (e) {
       debugPrint('analyzeMakeup error: $e');
       rethrow;
@@ -55,6 +68,7 @@ class ApiService {
   }
 
   /// Generate makeup transfer result.
+  @override
   Future<String> transferMakeup({
     required File targetImage,
     required String analysis,
@@ -72,10 +86,14 @@ class ApiService {
       // Download result image from URL
       final imgResp = await Dio().get(
         json['result_url'] as String,
-        options: Options(responseType: ResponseType.bytes, receiveTimeout: const Duration(seconds: 30)),
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
       final tempDir = Directory.systemTemp;
-      final outputPath = '${tempDir.path}/facematch_result_${DateTime.now().millisecondsSinceEpoch}.png';
+      final outputPath =
+          '${tempDir.path}/facematch_result_${DateTime.now().millisecondsSinceEpoch}.png';
       await File(outputPath).writeAsBytes(imgResp.data as List<int>);
       return outputPath;
     } catch (e) {
