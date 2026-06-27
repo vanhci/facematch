@@ -5,6 +5,8 @@ class MakeupAnalysis {
   final String blush;
   final String lips;
   final String contour;
+  final String hairstyle;
+  final String accessories;
 
   MakeupAnalysis({
     required this.base,
@@ -13,6 +15,8 @@ class MakeupAnalysis {
     required this.blush,
     required this.lips,
     required this.contour,
+    required this.hairstyle,
+    required this.accessories,
   });
 
   factory MakeupAnalysis.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,8 @@ class MakeupAnalysis {
       blush: val(json['腮红'] ?? json['blush']),
       lips: val(json['唇妆'] ?? json['lips']),
       contour: val(json['修容'] ?? json['contour']),
+      hairstyle: val(json['发型'] ?? json['hairstyle']),
+      accessories: val(json['配饰'] ?? json['accessories']),
     );
   }
 
@@ -39,6 +45,8 @@ class MakeupAnalysis {
       '腮红': blush,
       '唇妆': lips,
       '修容': contour,
+      '发型': hairstyle,
+      '配饰': accessories,
     };
   }
 
@@ -53,6 +61,8 @@ class MakeupAnalysis {
     blush: '颧骨上方，淡暖色调珊瑚色',
     lips: '裸色/深粉色，光泽质地，水润饱满',
     contour: '高光明显于额头、鼻梁、颧骨，修容轻微',
+    hairstyle: '微卷长发，深棕色，自然垂落',
+    accessories: '金色耳环，简约设计',
   );
 }
 

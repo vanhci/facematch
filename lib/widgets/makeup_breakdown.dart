@@ -107,6 +107,10 @@ class _CategoryCardState extends State<_CategoryCard>
         return Icons.water_drop_outlined;
       case '修容':
         return Icons.tune_outlined;
+      case '发型':
+        return Icons.auto_fix_high_outlined;
+      case '配饰':
+        return Icons.diamond_outlined;
       default:
         return Icons.colorize_outlined;
     }
@@ -126,6 +130,10 @@ class _CategoryCardState extends State<_CategoryCard>
         return const Color(0xFFE3F2FD);
       case '修容':
         return const Color(0xFFF3E5F5);
+      case '发型':
+        return const Color(0xFFFCE4EC);
+      case '配饰':
+        return const Color(0xFFFFF8E1);
       default:
         return AppColors.neutral100;
     }
