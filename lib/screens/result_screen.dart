@@ -13,18 +13,17 @@ class ResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF5F5),
+      backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           '仿妆效果',
-          style: TextStyle(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
             color: AppColors.neutral800,
-            fontSize: 18,
           ),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFFFFF5F5),
+        backgroundColor: AppColors.bgColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -56,7 +55,7 @@ class ResultScreen extends StatelessWidget {
                       child: _ActionCard(
                         icon: Icons.save_outlined,
                         label: '保存',
-                        color: AppColors.primary500,
+                        color: AppColors.primary,
                         onTap: () async {
                           final provider = context.read<MatchProvider>();
                           if (provider.resultImage != null) {
@@ -91,7 +90,7 @@ class ResultScreen extends StatelessWidget {
                       child: _ActionCard(
                         icon: Icons.ios_share_outlined,
                         label: '分享',
-                        color: AppColors.primary500,
+                        color: AppColors.primary,
                         onTap: () async {
                           final resultImage = provider.resultImage;
                           if (resultImage == null) return;
@@ -163,7 +162,7 @@ class _ActionCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.iconBg),
           border: Border.all(color: AppColors.neutral200),
         ),
         child: Column(

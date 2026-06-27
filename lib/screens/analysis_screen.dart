@@ -9,13 +9,16 @@ class AnalysisScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFFF0F0), Color(0xFFF0FFF0)],
+            colors: [Color(0xFFFFF0F0), Color(0xFFFCF5F5)], // 粉白渐变延续
           ),
         ),
         child: SafeArea(
@@ -32,18 +35,16 @@ class AnalysisScreen extends StatelessWidget {
                         color: AppColors.neutral300,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         '还没有妆容分析数据',
-                        style: TextStyle(
-                          fontSize: 16,
+                        style: textTheme.bodyLarge?.copyWith(
                           color: AppColors.neutral400,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         '先进行一次仿妆看看吧',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: textTheme.bodyMedium?.copyWith(
                           color: AppColors.neutral300,
                         ),
                       ),
@@ -57,32 +58,17 @@ class AnalysisScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '妆容分析',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.neutral800,
-                      ),
-                    ),
+                    Text('妆容分析', style: textTheme.headlineLarge),
                     const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.6),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFFF0708D,
-                            ).withValues(alpha: 0.06),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        boxShadow: AppColors.cardShadow,
                       ),
                       child: Row(
                         children: [
@@ -91,7 +77,9 @@ class AnalysisScreen extends StatelessWidget {
                             height: 44,
                             decoration: BoxDecoration(
                               color: const Color(0xFFFFE8EC),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.iconBg,
+                              ),
                             ),
                             child: const Icon(
                               Icons.face_retouching_natural,
@@ -100,22 +88,20 @@ class AnalysisScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'AI 妆容识别',
-                                style: TextStyle(
-                                  fontSize: 16,
+                                style: textTheme.bodyLarge?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.neutral800,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 '精确AI分析参考妆容',
-                                style: TextStyle(
-                                  fontSize: 12,
+                                style: textTheme.bodySmall?.copyWith(
                                   color: AppColors.neutral500,
                                 ),
                               ),

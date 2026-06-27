@@ -13,12 +13,11 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           '历史记录',
-          style: TextStyle(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
             color: AppColors.neutral800,
-            fontSize: 18,
           ),
         ),
         centerTitle: true,
@@ -37,7 +36,7 @@ class HistoryScreen extends StatelessWidget {
                     height: 80,
                     decoration: BoxDecoration(
                       color: AppColors.neutral100,
-                      borderRadius: BorderRadius.circular(40),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: const Icon(
                       Icons.history_outlined,
@@ -46,14 +45,18 @@ class HistoryScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     '还没有仿妆记录',
-                    style: TextStyle(fontSize: 16, color: AppColors.neutral400),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.neutral400,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '完成一次仿妆后，结果会出现在这里',
-                    style: TextStyle(fontSize: 14, color: AppColors.neutral300),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.neutral300,
+                    ),
                   ),
                 ],
               ),
@@ -87,7 +90,7 @@ class _HistoryCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         boxShadow: AppColors.cardShadow,
       ),
       child: Padding(
@@ -99,7 +102,7 @@ class _HistoryCard extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.iconBg),
                 color: AppColors.neutral100,
               ),
               child: result.status == Status.completed
@@ -125,8 +128,7 @@ class _HistoryCard extends StatelessWidget {
                 children: [
                   Text(
                     result.status == Status.completed ? '仿妆完成' : '处理中...',
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.neutral800,
                     ),
@@ -134,8 +136,7 @@ class _HistoryCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     dateStr,
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.neutral400,
                     ),
                   ),
@@ -157,7 +158,7 @@ class _HistoryCard extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppColors.neutral100,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.label),
                   ),
                   child: const Icon(
                     Icons.chevron_right,

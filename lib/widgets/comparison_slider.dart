@@ -44,7 +44,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
         height: 400,
         decoration: BoxDecoration(
           color: AppColors.neutral100,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         child: const Center(
           child: Text('暂无对比图', style: TextStyle(color: AppColors.neutral400)),
@@ -58,7 +58,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
         final height = width * 1.2; // 5:6 aspect ratio
 
         return ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           child: SizedBox(
             width: width,
             height: height,
@@ -132,13 +132,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                boxShadow: AppColors.cardShadow,
                               ),
                               child: const Icon(
                                 Icons.swap_horiz,
@@ -177,7 +171,9 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.pill,
+                                    ),
                                   ),
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -219,7 +215,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.black54,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.label),
       ),
       child: Text(
         text,

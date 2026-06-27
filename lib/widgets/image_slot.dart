@@ -39,7 +39,7 @@ class ImageSlot extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: AppColors.neutral100,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: const Center(
         child: CircularProgressIndicator(
@@ -57,17 +57,11 @@ class ImageSlot extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            boxShadow: AppColors.cardShadow,
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             child: Image.file(
               image!,
               fit: BoxFit.cover,
@@ -109,8 +103,8 @@ class ImageSlot extends StatelessWidget {
             decoration: const BoxDecoration(
               color: Colors.black54,
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+                bottomLeft: Radius.circular(AppRadius.card),
+                bottomRight: Radius.circular(AppRadius.card),
               ),
             ),
             child: Text(
@@ -136,7 +130,7 @@ class ImageSlot extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           color: AppColors.neutral100,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
             color: AppColors.neutral300,
             width: 2,
@@ -151,11 +145,11 @@ class ImageSlot extends StatelessWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: AppColors.primary100,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: const Icon(
                 Icons.add_photo_alternate_outlined,
-                color: AppColors.primary500,
+                color: AppColors.primary,
                 size: 24,
               ),
             ),

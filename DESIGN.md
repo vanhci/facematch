@@ -18,31 +18,37 @@
 
 ## 2. Color Palette
 
-### Primary — Rose Quartz
+### Primary — Rose Gold (暖粉调)
 ```yaml
 colors:
-  primary_50: '#FFF0F3'   # Lightest tint — backgrounds, badges
-  primary_100: '#FFD6DE'  # Light tint — hover states, highlights
-  primary_200: '#FFB3C1'  # Medium tint — secondary elements
-  primary_300: '#FF8FA3'  # Main accent — CTAs, active state
-  primary_400: '#FF4D6D'  # Strong accent — icons, links
-  primary_500: '#E63946'  # Primary brand color — headers, primary buttons
-  primary_600: '#C1121F'  # Dark — pressed states
-  primary_700: '#A4131C'  # Darker — text on light bg
+  primary_50: '#FFF5F7'   # Lightest tint — backgrounds, badges
+  primary_100: '#FFE0E6'  # Light tint — hover states, highlights
+  primary_200: '#FFB8C8'  # Medium tint — secondary elements
+  primary_300: '#FC8BA2'  # Main accent — CTAs, active state
+  primary_400: '#F0708D'  # Primary brand — headers, primary buttons
+  primary_500: '#E85978'  # Strong accent — icons, links
+  primary_600: '#D43A5A'  # Dark — pressed states
+  primary_700: '#B82242'  # Darker — text on light bg
+```
+
+### Background — Warm Blush
+```yaml
+colors:
+  bgColor: '#FCF5F5'     # 暖粉白 — page background
 ```
 
 ### Neutral — Warm Grey
 ```yaml
 colors:
-  neutral_50: '#FAF9F8'   # Page background
-  neutral_100: '#F5F3F0'  # Card backgrounds, surfaces
-  neutral_200: '#EDE8E4'  # Dividers, borders
-  neutral_300: '#D6CFC9'  # Disabled states, placeholders
-  neutral_400: '#A89F97'  # Secondary text
-  neutral_500: '#7C736A'  # Body text
-  neutral_600: '#5C534C'  # Headings
-  neutral_700: '#2D2A27'  # Primary text (dark)
-  neutral_800: '#1A1817'  # Darkest text
+  neutral_50: '#FCFAFA'   # Page background
+  neutral_100: '#F5F5F5'  # Card backgrounds, surfaces
+  neutral_200: '#EEEEEE'  # Dividers, borders
+  neutral_300: '#D6D6D6'  # Disabled states, placeholders
+  neutral_400: '#AAAAAA'  # Secondary text
+  neutral_500: '#8E8E93'  # Body text
+  neutral_600: '#555555'  # Headings
+  neutral_700: '#2D2D2D'  # Primary text (dark)
+  neutral_800: '#1A1A1A'  # Darkest text
 ```
 
 ### Semantic

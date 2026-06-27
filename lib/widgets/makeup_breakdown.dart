@@ -146,15 +146,9 @@ class _CategoryCardState extends State<_CategoryCard>
               const Color(0xFFFFF5F5).withValues(alpha: 0.6),
             ],
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFF0708D).withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppColors.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +162,7 @@ class _CategoryCardState extends State<_CategoryCard>
                     height: 36,
                     decoration: BoxDecoration(
                       color: _iconBg(widget.title),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.iconBg),
                     ),
                     child: Icon(
                       _icon(widget.title),
@@ -196,14 +190,8 @@ class _CategoryCardState extends State<_CategoryCard>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      boxShadow: AppColors.cardShadow,
                     ),
                     child: AnimatedRotation(
                       turns: _isExpanded ? 0.5 : 0,

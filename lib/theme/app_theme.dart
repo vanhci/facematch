@@ -4,7 +4,7 @@ class AppColors {
   AppColors._();
 
   // Primary — Rose Gold (modern, feminine, sophisticated)
-  static const bgColor = Color(0xFFFAF0E9); // 暖米白
+  static const bgColor = Color(0xFFFCF5F5); // 暖粉白
   static const primary = Color(0xFFF0708D); // 玫瑰金主色
   static const warmBrown = Color(0xFF5C4333); // 暖棕文字
   static const warmLight = Color(0xFFF5F2EF); // 暖白卡片
@@ -57,6 +57,47 @@ class AppColors {
       offset: const Offset(0, 4),
     ),
   ];
+}
+
+/// Design-system border-radius constants
+///
+/// See DESIGN.md §5 Border Radius.
+class AppRadius {
+  AppRadius._();
+
+  /// Fully round — pills, buttons, FABs (999)
+  static const pill = 99.0;
+
+  /// Large containers — cards, modals, bottom sheets (20)
+  static const card = 20.0;
+
+  /// Medium containers — icon backgrounds, chips (12)
+  static const iconBg = 12.0;
+
+  /// Small surfaces — labels, small avatars, thumbnails (8)
+  static const label = 8.0;
+}
+
+/// Spacing constants — use `gap()` for convenient SizedBox sizing.
+///
+/// See DESIGN.md §4 Spacing.
+class AppSpacing {
+  AppSpacing._();
+
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 24;
+  static const double xxl = 32;
+}
+
+extension SizedBoxGap on num {
+  /// Creates a [SizedBox] with [width] and [height] set to this value.
+  /// ```dart
+  /// 12.gap()  // SizedBox(width: 12, height: 12)
+  /// ```
+  Widget gap() => SizedBox(width: toDouble(), height: toDouble());
 }
 
 class AppTheme {
@@ -133,10 +174,10 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: const Color(0xFF4A1A2A), // 深玫瑰色 — WCAG AA ≥ 4.5:1
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(99),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           elevation: 0,
@@ -149,7 +190,7 @@ class AppTheme {
           side: const BorderSide(color: AppColors.primary200),
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(99),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
@@ -159,14 +200,16 @@ class AppTheme {
         elevation: 0,
         shadowColor: Colors.black.withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           side: const BorderSide(color: AppColors.neutral200, width: 0.5),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.card),
+          ),
         ),
       ),
       dividerTheme: const DividerThemeData(

@@ -23,7 +23,9 @@ class HomeScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.card),
+        ),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -36,7 +38,7 @@ class HomeScreen extends StatelessWidget {
                 height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.neutral300,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppRadius.label),
                 ),
               ),
               const SizedBox(height: 20),
@@ -90,7 +92,7 @@ class HomeScreen extends StatelessWidget {
           gradient: RadialGradient(
             center: Alignment.topLeft,
             radius: 1.5,
-            colors: [Color(0xFFFFF0F0), Color(0xFFFDF6F6), Color(0xFFF5E9E9)],
+            colors: [Color(0xFFFFF0F0), Color(0xFFFCF5F5), Color(0xFFF5E9E9)],
           ),
         ),
         child: SafeArea(
@@ -106,7 +108,7 @@ class HomeScreen extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         gradient: AppColors.gradientRose,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.iconBg),
                       ),
                       child: const Icon(
                         Icons.face_retouching_natural,
@@ -203,7 +205,7 @@ class HomeScreen extends StatelessWidget {
         width: double.infinity,
         height: 56,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           gradient: AppColors.gradientRose,
         ),
         child: Center(
@@ -255,9 +257,9 @@ class HomeScreen extends StatelessWidget {
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: provider.canMatch
-              ? AppColors.primary500
+              ? AppColors.primary
               : AppColors.neutral300,
-          foregroundColor: Colors.white,
+          foregroundColor: const Color(0xFF4A1A2A),
           disabledBackgroundColor: AppColors.neutral200,
           disabledForegroundColor: AppColors.neutral400,
           elevation: 0,
@@ -281,7 +283,7 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.iconBg),
         border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -361,19 +363,8 @@ class _ImageCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(4, 4),
-            ),
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.8),
-              blurRadius: 10,
-              offset: const Offset(-4, -4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: AppColors.cardShadow,
           border: Border.all(
             color: Colors.white.withValues(alpha: 0.3),
             width: 1,
@@ -405,7 +396,7 @@ class _ImageCard extends StatelessWidget {
                         height: 24,
                         decoration: BoxDecoration(
                           color: Colors.grey.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: const Icon(
                           Icons.close,
@@ -422,17 +413,11 @@ class _ImageCard extends StatelessWidget {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      blurRadius: 15,
-                      offset: Offset.zero,
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                  boxShadow: AppColors.cardShadow,
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.iconBg),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -476,7 +461,9 @@ class _ImageCard extends StatelessWidget {
                               height: 24,
                               decoration: BoxDecoration(
                                 color: Colors.black26,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                               child: const Icon(
                                 Icons.close,
@@ -500,8 +487,8 @@ class _ImageCard extends StatelessWidget {
                             decoration: const BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(6),
-                                topRight: Radius.circular(6),
+                                topLeft: Radius.circular(AppRadius.label),
+                                topRight: Radius.circular(AppRadius.label),
                               ),
                             ),
                             child: Center(
@@ -547,11 +534,11 @@ class _PickerOption extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.neutral100,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.iconBg),
         ),
         child: Row(
           children: [
-            Icon(icon, color: AppColors.primary500, size: 24),
+            Icon(icon, color: AppColors.primary, size: 24),
             const SizedBox(width: 12),
             Text(
               label,
