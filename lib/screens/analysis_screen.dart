@@ -111,6 +111,45 @@ class AnalysisScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    // Reference image preview
+                    if (provider.referenceImage != null)
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
+                          boxShadow: AppColors.cardShadow,
+                        ),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.iconBg,
+                              ),
+                              child: Image.file(
+                                provider.referenceImage!,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                '分析基于此参考妆容',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.neutral500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 16),
                     MakeupBreakdown(
                       analysis: provider.analysis!.toCategoryMap(),
                     ),

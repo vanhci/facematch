@@ -154,6 +154,10 @@ class MatchProvider extends ChangeNotifier {
 
     try {
       // Step 1: Analyze reference image
+      debugPrint(
+        '>>> startMatch: analyzing reference image at ${_referenceImage?.path}',
+      );
+      debugPrint('>>> startMatch: selfie image at ${_selfieImage?.path}');
       _analysis = await _api.analyzeMakeup(_referenceImage!);
       if (_isCancelled) {
         _finishCancelled();
