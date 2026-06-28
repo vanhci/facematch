@@ -17,7 +17,7 @@ async def analyze(reference_image: UploadFile = File(...)):
         "model": "qwen3.7-plus",
         "messages": [{"role": "user", "content": [
             {"type": "image_url", "image_url": {"url": img_b64(data)}},
-            {"type": "text", "text": "分析这张照片的整体造型。用JSON输出以下字段，每个字段给出详细中文描述（颜色、质地、位置、风格）：底妆、眼妆、眉妆、腮红、唇妆、修容、发型、配饰。"}
+            {"type": "text", "text": "分析这张照片的妆容和整体造型。用JSON格式输出，key为以下字段名，每个字段的value是一段连贯的中文描述（不要拆分成颜色/质地/位置/风格子字段，直接写一段话）：底妆、眼妆、眉妆、腮红、唇妆、修容、发型、配饰。"}
         ]}],
         "max_tokens": 800
     }
