@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/match_provider.dart';
@@ -105,7 +106,19 @@ class _HistoryCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.iconBg),
                 color: AppColors.neutral100,
               ),
-              child: result.status == Status.completed
+              clipBehavior: Clip.antiAlias,
+              child:
+                  result.status == Status.completed &&
+                      result.resultImagePath != null
+                  ? Image.file(
+                      File(result.resultImagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.broken_image_outlined,
+                        color: AppColors.neutral300,
+                      ),
+                    )
+                  : result.status == Status.completed
                   ? const Icon(
                       Icons.image_outlined,
                       color: AppColors.neutral300,

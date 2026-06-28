@@ -388,23 +388,6 @@ class _ImageCard extends StatelessWidget {
                       color: Color(0xFF555555),
                     ),
                   ),
-                  if (image != null && onClear != null)
-                    GestureDetector(
-                      onTap: onClear,
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
