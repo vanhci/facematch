@@ -1,7 +1,7 @@
 name: facematch
 description: "FaceMatch - 看见你的妆，复制你的美"
 publish_to: 'none'
-version: 1.0.0+37
+version: 1.0.0+38
 
 environment:
   sdk: ^3.11.4

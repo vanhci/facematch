@@ -12,7 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: 'https://woqlrmmlhluaeaizrizg.supabase.co',
-    publishableKey: 'eyJhbG...BxPQ',
+    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcWxybW1saGx1YWVhaXpyaXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTAwOTUsImV4cCI6MjA5ODIyNjA5NX0.OLkvc5RWv5EQ--nCixs61HD8jculYiGKqijYqO-BxPQ',
   );
   runApp(const FaceMatchApp());
 }
