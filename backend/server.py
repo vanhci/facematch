@@ -37,9 +37,36 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     import base64
     img_b64 = base64.b64encode(data).decode()
     data_uri = f"data:image/jpeg;base64,{img_b64}"
+
+    # Parse analysis JSON to extract makeup, hairstyle, accessories
+    try:
+        analysis_json = json.loads(analysis)
+        makeup_desc = "；".join([
+            f"{k}：{analysis_json.get(k, '')[:80]}"
+            for k in ["底妆", "眼妆", "眉妆", "腮红", "唇妆", "修容"]
+            if analysis_json.get(k)
+        ])
+        hair_desc = analysis_json.get("发型", "")
+        accessory_desc = analysis_json.get("配饰", "")
+    except (json.JSONDecodeError, TypeError):
+        makeup_desc = ""
+        hair_desc = ""
+        accessory_desc = ""
+
+    prompt_parts = ["Apply the following makeup to the person in this photo:"]
+    if makeup_desc:
+        prompt_parts.append(f"Makeup style: {makeup_desc}")
+    if hair_desc:
+        prompt_parts.append(f"Hairstyle: {hair_desc[:120]}")
+    if accessory_desc:
+        prompt_parts.append(f"Accessories: {accessory_desc[:120]}")
+    prompt_parts.append("Keep the original face, features, skin texture and identity completely unchanged.")
+    prompt_parts.append("Make the hairstyle and any accessories visible in the generated result.")
+    prompt_text = "\n".join(prompt_parts)
+
     messages = [{"role": "user", "content": [
         {"image": data_uri},
-        {"text": f"Subtle natural everyday makeup ONLY. Very light warm brown eyeshadow, thin eyeliner, soft coral blush, natural pink lip gloss. Keep the original face, features, and skin texture completely unchanged. The result should look like NO makeup was added - just a slightly fresher version of the original. DO NOT add heavy eyeshadow, dark lipstick, or dramatic makeup."}
+        {"text": prompt_text}
     ]}]
     resp = MultiModalConversation.call(
         model="wan2.7-image-pro",
