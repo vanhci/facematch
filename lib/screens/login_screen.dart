@@ -1,9 +1,5 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,59 +10,101 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _nicknameController = TextEditingController();
-  File? _avatarFile;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isRegister = false;
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _nicknameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickAvatar() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 256,
-    );
-    if (picked != null) {
-      setState(() => _avatarFile = File(picked.path));
-    }
-  }
+  Future<void> _submit() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
-  Future<void> _login() async {
-    final nickname = _nicknameController.text.trim();
-    if (nickname.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('请输入昵称'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (email.isEmpty || !email.contains('@')) {
+      _showError('请输入有效的邮箱地址');
+      return;
+    }
+    if (password.length < 6) {
+      _showError('密码至少 6 位');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // Generate unique user ID
-    final userId =
-        'user_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(99999)}';
+    try {
+      if (_isRegister) {
+        await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+        );
+        _showSuccess('注册成功！请查看邮箱确认（如已开启邮箱确认），然后登录。');
+        setState(() => _isRegister = false);
+      } else {
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+        // AuthGate 会自动导航到主页
+      }
+    } on AuthException catch (e) {
+      _showError(_mapAuthError(e.message));
+    } catch (e) {
+      _showError('网络异常，请重试');
+    }
 
-    // Save user data locally
-    final dir = await getApplicationDocumentsDirectory();
-    final userFile = File('${dir.path}/facematch_user.json');
-    await userFile.writeAsString(
-      jsonEncode({
-        'user_id': userId,
-        'nickname': nickname,
-        'avatar_path': _avatarFile?.path,
-        'login_time': DateTime.now().toIso8601String(),
-      }),
-    );
+    setState(() => _isLoading = false);
+  }
 
+  String _mapAuthError(String msg) {
+    if (msg.contains('Invalid login credentials')) return '邮箱或密码错误';
+    if (msg.contains('Email not confirmed')) return '请先确认邮箱（查看收件箱）';
+    if (msg.contains('User already registered')) return '该邮箱已注册，请直接登录';
+    if (msg.contains('Password should be')) return '密码至少 6 位';
+    if (msg.contains('rate limit')) return '操作太频繁，请稍后再试';
+    return msg;
+  }
+
+  void _showError(String msg) {
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/home');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.error,
+      ),
+    );
+  }
+
+  void _showSuccess(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (!email.contains('@')) {
+      _showError('先输入邮箱地址');
+      return;
+    }
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      _showSuccess('密码重置链接已发送到邮箱');
+    } catch (e) {
+      _showError('发送失败，请重试');
+    }
   }
 
   @override
@@ -118,58 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
 
-                  // Avatar picker
-                  GestureDetector(
-                    onTap: _pickAvatar,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 88,
-                          height: 88,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              width: 2,
-                            ),
-                            boxShadow: AppColors.cardShadow,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: _avatarFile != null
-                                ? Image.file(_avatarFile!, fit: BoxFit.cover)
-                                : const Icon(
-                                    Icons.person_outline,
-                                    size: 40,
-                                    color: AppColors.neutral300,
-                                  ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              size: 14,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Nickname input
+                  // Email
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.8),
@@ -177,29 +164,79 @@ class _LoginScreenState extends State<LoginScreen> {
                       border: Border.all(color: AppColors.neutral200),
                     ),
                     child: TextField(
-                      controller: _nicknameController,
-                      textAlign: TextAlign.center,
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
-                        hintText: '输入你的昵称',
-                        hintStyle: TextStyle(color: AppColors.neutral300),
+                        hintText: '邮箱地址',
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: AppColors.neutral400,
+                        ),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(vertical: 16),
                       ),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.neutral700,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Password
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.neutral200),
+                    ),
+                    child: TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        hintText: '密码（至少6位）',
+                        prefixIcon: const Icon(
+                          Icons.lock_outlined,
+                          color: AppColors.neutral400,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: AppColors.neutral400,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 8),
 
-                  // Login button
+                  // Forgot password
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _resetPassword,
+                      child: const Text(
+                        '忘记密码？',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.neutral500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Submit button
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _login,
+                      onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: const Color(0xFF4A1A2A),
@@ -217,14 +254,40 @@ class _LoginScreenState extends State<LoginScreen> {
                                 strokeWidth: 2.5,
                               ),
                             )
-                          : const Text(
-                              '开始使用',
-                              style: TextStyle(
+                          : Text(
+                              _isRegister ? '注册' : '登录',
+                              style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Toggle register/login
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _isRegister ? '已有账号？' : '没有账号？',
+                        style: const TextStyle(
+                          color: AppColors.neutral500,
+                          fontSize: 14,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            setState(() => _isRegister = !_isRegister),
+                        child: Text(
+                          _isRegister ? '去登录' : '注册',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

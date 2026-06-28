@@ -1,6 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'providers/match_provider.dart';
@@ -9,8 +8,12 @@ import 'screens/history_screen.dart';
 import 'screens/analysis_screen.dart';
 import 'screens/login_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: 'https://woqlrmmlhluaeaizrizg.supabase.co',
+    publishableKey: 'eyJhbG...BxPQ',
+  );
   runApp(const FaceMatchApp());
 }
 
@@ -25,50 +28,13 @@ class FaceMatchApp extends StatelessWidget {
         title: '颜摹',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: const _EntryPoint(),
-        routes: {
-          '/login': (_) => const LoginScreen(),
-          '/home': (_) => const MainShell(),
-        },
+        home: Supabase.instance.client.auth.currentUser != null
+            ? const MainShell()
+            : const LoginScreen(),
       ),
     );
   }
 }
-
-class _EntryPoint extends StatefulWidget {
-  const _EntryPoint();
-
-  @override
-  State<_EntryPoint> createState() => _EntryPointState();
-}
-
-class _EntryPointState extends State<_EntryPoint> {
-  @override
-  void initState() {
-    super.initState();
-    _checkLogin();
-  }
-
-  Future<void> _checkLogin() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final userFile = File('${dir.path}/facematch_user.json');
-    final exists = await userFile.exists();
-    if (!mounted) return;
-    if (exists) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/login');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-    );
-  }
-}
-
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -78,7 +44,6 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-
   final _pages = const [HomeScreen(), AnalysisScreen(), HistoryScreen()];
 
   @override
@@ -100,7 +65,7 @@ class _MainShellState extends State<MainShell> {
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
+            onTap: (i) => setState(() => _currentIndex = i),
             backgroundColor: Colors.white,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.neutral400,

@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/makeup_analysis.dart';
 import '../services/api_service.dart';
 
@@ -12,6 +11,9 @@ class MatchProvider extends ChangeNotifier {
   final MakeupApi _api;
 
   MatchProvider({MakeupApi? api}) : _api = api ?? ApiService();
+
+  // User
+  String? get userId => Supabase.instance.client.auth.currentUser?.id;
 
   // Images
   File? _referenceImage;
@@ -27,7 +29,11 @@ class MatchProvider extends ChangeNotifier {
 
   // History
   final List<MatchResult> _history = [];
-  File? _historyFile;
+
+  // Usage
+  int _dailyUsage = 0;
+  int _dailyLimit = 3;
+  int _bonusCredits = 0;
 
   // Getters
   File? get referenceImage => _referenceImage;
@@ -39,46 +45,59 @@ class MatchProvider extends ChangeNotifier {
   String? get error => _error;
   List<MatchResult> get history => List.unmodifiable(_history);
   bool get canMatch => _referenceImage != null && _selfieImage != null;
+  int get remaining {
+    final daily = max(0, _dailyLimit - _dailyUsage);
+    return daily + _bonusCredits;
+  }
+
+  // ─── Init ───────────────────────────────
 
   Future<void> init() async {
-    final docDir = await getApplicationDocumentsDirectory();
-    // Read user ID for history isolation
-    String? userId;
-    final userFile = File('${docDir.path}/facematch_user.json');
-    if (await userFile.exists()) {
-      try {
-        final data = jsonDecode(await userFile.readAsString());
-        userId = data['user_id'] as String?;
-        // Migrate: generate userId for existing users without one
-        if (userId == null) {
-          userId =
-              'user_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(99999)}';
-          data['user_id'] = userId;
-          await userFile.writeAsString(jsonEncode(data));
-        }
-      } catch (_) {}
-    }
-    final suffix = userId != null ? '_$userId' : '';
-    _historyFile = File('${docDir.path}/facematch_history$suffix.json');
+    await _loadUsage();
     await _loadHistory();
   }
 
-  Future<void> _loadHistory() async {
-    final file = _historyFile;
-    if (file == null || !await file.exists()) return;
-
+  Future<void> _loadUsage() async {
+    final uid = userId;
+    if (uid == null) return;
     try {
-      final raw = await file.readAsString();
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return;
+      final resp = await ApiService().dio.get('/api/v2/user/usage/$uid');
+      final data = resp.data as Map<String, dynamic>;
+      _dailyUsage = data['daily_usage'] as int? ?? 0;
+      _dailyLimit = data['daily_limit'] as int? ?? 3;
+      _bonusCredits = data['bonus_credits'] as int? ?? 0;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('load usage error: $e');
+    }
+  }
 
+  Future<void> _loadHistory() async {
+    final uid = userId;
+    if (uid == null) return;
+    try {
+      final resp = await ApiService().dio.get('/api/v2/history/$uid');
+      final list = resp.data as List;
       _history
         ..clear()
         ..addAll(
-          decoded
-              .whereType<Map<String, dynamic>>()
-              .map(MatchResult.fromJson)
-              .toList(),
+          list.whereType<Map<String, dynamic>>().map((j) {
+            final analysis = j['analysis'] is Map
+                ? MakeupAnalysis.fromJson(j['analysis'] as Map<String, dynamic>)
+                : null;
+            return MatchResult(
+              id: j['id'] as String? ?? '',
+              createdAt:
+                  DateTime.tryParse(j['created_at'] as String? ?? '') ??
+                  DateTime.now(),
+              referenceImagePath: null, // images stored in cloud in future
+              selfieImagePath: null,
+              resultImagePath: null,
+              resultImageUrl: j['result_image_url'] as String?,
+              analysis: analysis,
+              status: Status.completed,
+            );
+          }).toList(),
         );
       notifyListeners();
     } catch (e) {
@@ -86,81 +105,54 @@ class MatchProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveHistory() async {
-    final file = _historyFile;
-    if (file == null) return;
+  // ─── Image picking ───────────────────────
 
-    try {
-      await file.writeAsString(
-        jsonEncode(_history.map((item) => item.toJson()).toList()),
-      );
-    } catch (e) {
-      debugPrint('save history error: $e');
-    }
-  }
-
-  /// Pick reference makeup image
   Future<void> pickReferenceImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source, maxWidth: 1024);
     if (picked != null) {
-      final image = File(picked.path);
-      _referenceImage = image;
-      _error = await _validateImage(image);
+      _referenceImage = File(picked.path);
+      _error = await _validateImage(_referenceImage!);
       notifyListeners();
     }
   }
 
-  /// Pick selfie image
   Future<void> pickSelfieImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source, maxWidth: 1024);
     if (picked != null) {
-      final image = File(picked.path);
-      _selfieImage = image;
-      _error = await _validateImage(image, isSelfie: true);
+      _selfieImage = File(picked.path);
+      _error = await _validateImage(_selfieImage!, isSelfie: true);
       notifyListeners();
     }
   }
 
   Future<String?> _validateImage(File image, {bool isSelfie = false}) async {
-    if (await image.length() < 10 * 1024) {
-      return '图片太小，请选择更清晰的照片';
-    }
-
-    try {
-      final bytes = await image.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-      final width = frame.image.width;
-      frame.image.dispose();
-      if (width < 200) {
-        return isSelfie ? '图片太小，建议使用正面清晰自拍' : '图片太小，建议使用清晰的人像照片';
-      }
-    } catch (e) {
-      debugPrint('validate image error: $e');
-    }
-
+    if (await image.length() < 10 * 1024) return '图片太小，请选择更清晰的照片';
     return null;
   }
 
-  /// Remove reference image
   void clearReference() {
     _referenceImage = null;
     _error = null;
     notifyListeners();
   }
 
-  /// Remove selfie image
   void clearSelfie() {
     _selfieImage = null;
     _error = null;
     notifyListeners();
   }
 
-  /// Start the match process: analyze + transfer
+  // ─── Match process ───────────────────────
+
   Future<void> startMatch() async {
     if (!canMatch) return;
+    if (remaining <= 0) {
+      _error = '今日次数已用完，请明天再试或购买加油包';
+      notifyListeners();
+      return;
+    }
 
     _isCancelled = false;
     _isAnalyzing = true;
@@ -172,11 +164,7 @@ class MatchProvider extends ChangeNotifier {
 
     try {
       // Step 1: Analyze reference image
-      debugPrint(
-        '>>> startMatch: analyzing reference image at ${_referenceImage?.path}',
-      );
-      debugPrint('>>> startMatch: selfie image at ${_selfieImage?.path}');
-      _analysis = await _api.analyzeMakeup(_referenceImage!);
+      _analysis = await _api.analyzeMakeup(_referenceImage!, _userId());
       if (_isCancelled) {
         _finishCancelled();
         return;
@@ -189,34 +177,21 @@ class MatchProvider extends ChangeNotifier {
       final resultPath = await _api.transferMakeup(
         targetImage: _selfieImage!,
         analysis: jsonEncode(_analysis!.toCategoryMap()),
+        userId: _userId(),
       );
       if (_isCancelled) {
         _finishCancelled();
         return;
       }
 
-      if (resultPath.isNotEmpty) {
-        _resultImage = File(resultPath);
-      }
+      if (resultPath.isNotEmpty) _resultImage = File(resultPath);
 
       _isGenerating = false;
+      _dailyUsage++;
       notifyListeners();
 
-      // Add to history
-      _history.insert(
-        0,
-        MatchResult(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          createdAt: DateTime.now(),
-          referenceImagePath: _referenceImage?.path,
-          selfieImagePath: _selfieImage?.path,
-          resultImagePath: _resultImage?.path,
-          analysis: _analysis,
-          status: Status.completed,
-        ),
-      );
-      await _saveHistory();
-      notifyListeners();
+      // Save to Supabase history
+      _saveHistory();
     } on FormatException {
       _error = '妆容分析数据异常，请换一张参考图重试';
       _isAnalyzing = false;
@@ -230,12 +205,33 @@ class MatchProvider extends ChangeNotifier {
     }
   }
 
-  bool _isNetworkError(Object error) {
-    final message = error.toString().toLowerCase();
-    return message.contains('dioexception') ||
-        message.contains('socketexception') ||
-        message.contains('connection') ||
-        message.contains('timeout');
+  Future<void> _saveHistory() async {
+    final uid = userId;
+    if (uid == null) return;
+    try {
+      await ApiService().dio.post(
+        '/api/v2/history',
+        data: {
+          'user_id': uid,
+          'reference_image_url': '',
+          'selfie_image_url': '',
+          'result_image_url': '',
+          'analysis': _analysis?.toCategoryMap(),
+        },
+      );
+    } catch (e) {
+      debugPrint('save history error: $e');
+    }
+  }
+
+  String _userId() => userId ?? '';
+
+  bool _isNetworkError(Object e) {
+    final m = e.toString().toLowerCase();
+    return m.contains('dioexception') ||
+        m.contains('socketexception') ||
+        m.contains('connection') ||
+        m.contains('timeout');
   }
 
   void _finishCancelled() {
@@ -248,7 +244,6 @@ class MatchProvider extends ChangeNotifier {
 
   void cancelGeneration() {
     if (!_isAnalyzing && !_isGenerating) return;
-
     _isCancelled = true;
     _isAnalyzing = false;
     _isGenerating = false;
@@ -261,18 +256,6 @@ class MatchProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  @visibleForTesting
-  void setImagesForTest({
-    required File referenceImage,
-    required File selfieImage,
-  }) {
-    _referenceImage = referenceImage;
-    _selfieImage = selfieImage;
-    _error = null;
-    notifyListeners();
-  }
-
-  /// Reset all selections
   void reset() {
     _referenceImage = null;
     _selfieImage = null;
@@ -284,7 +267,6 @@ class MatchProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Load a history result for viewing
   void loadHistoryResult(MatchResult result) {
     _resultImage = result.resultImagePath != null
         ? File(result.resultImagePath!)
@@ -299,6 +281,13 @@ class MatchProvider extends ChangeNotifier {
     _isAnalyzing = false;
     _isGenerating = false;
     _error = null;
+    notifyListeners();
+  }
+
+  Future<void> signOut() async {
+    await Supabase.instance.client.auth.signOut();
+    reset();
+    _history.clear();
     notifyListeners();
   }
 }

@@ -137,6 +137,23 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const Spacer(),
+                    // Sign out
+                    GestureDetector(
+                      onTap: () => context.read<MatchProvider>().signOut(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: const Icon(
+                          Icons.logout,
+                          size: 18,
+                          color: AppColors.neutral500,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
