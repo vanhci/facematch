@@ -134,21 +134,21 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     except (json.JSONDecodeError, TypeError):
         makeup_desc = hair_desc = accessory_desc = ""
 
-    prompt_parts = ["Apply the following makeup to the person in this photo:"]
+    prompt_parts = ["Apply ONLY the makeup style to this person. Do NOT change their face shape,五官, facial structure, or identity."]
     if makeup_desc:
-        prompt_parts.append(f"Makeup style: {makeup_desc}")
+        prompt_parts.append(f"Makeup: {makeup_desc}")
     if hair_desc:
         prompt_parts.append(f"Hairstyle: {hair_desc[:120]}")
     if accessory_desc:
         prompt_parts.append(f"Accessories: {accessory_desc[:120]}")
-    prompt_parts.append("Keep the original face, features, skin texture and identity completely unchanged.")
-    prompt_parts.append("Make the hairstyle and any accessories visible in the generated result.")
+    prompt_parts.append("CRITICAL: Preserve the original person's identity, face shape, nose, eyes, mouth, and skin texture EXACTLY as they are.")
+    prompt_parts.append("Only change the makeup colors and placement. The person must remain recognizable as the same individual.")
     prompt_text = "\n".join(prompt_parts)
 
     messages = [{"role": "user", "content": [{"image": data_uri}, {"text": prompt_text}]}]
     resp = MultiModalConversation.call(
         model="wan2.7-image-pro", messages=messages, api_key=KEY,
-        parameters={"size": "1328*1328", "n": 1, "watermark": False, "denoise_strength": 0.3}
+        parameters={"size": "1328*1328", "n": 1, "watermark": False, "denoise_strength": 0.15}
     )
     result = resp if isinstance(resp, dict) else resp.__dict__
     if result.get("status_code") != 200:
