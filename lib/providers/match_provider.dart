@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -41,7 +42,24 @@ class MatchProvider extends ChangeNotifier {
 
   Future<void> init() async {
     final docDir = await getApplicationDocumentsDirectory();
-    _historyFile = File('${docDir.path}/facematch_history.json');
+    // Read user ID for history isolation
+    String? userId;
+    final userFile = File('${docDir.path}/facematch_user.json');
+    if (await userFile.exists()) {
+      try {
+        final data = jsonDecode(await userFile.readAsString());
+        userId = data['user_id'] as String?;
+        // Migrate: generate userId for existing users without one
+        if (userId == null) {
+          userId =
+              'user_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(99999)}';
+          data['user_id'] = userId;
+          await userFile.writeAsString(jsonEncode(data));
+        }
+      } catch (_) {}
+    }
+    final suffix = userId != null ? '_$userId' : '';
+    _historyFile = File('${docDir.path}/facematch_history$suffix.json');
     await _loadHistory();
   }
 

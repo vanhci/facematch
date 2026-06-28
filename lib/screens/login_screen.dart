@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -48,11 +49,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
+    // Generate unique user ID
+    final userId =
+        'user_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(99999)}';
+
     // Save user data locally
     final dir = await getApplicationDocumentsDirectory();
     final userFile = File('${dir.path}/facematch_user.json');
     await userFile.writeAsString(
       jsonEncode({
+        'user_id': userId,
         'nickname': nickname,
         'avatar_path': _avatarFile?.path,
         'login_time': DateTime.now().toIso8601String(),
