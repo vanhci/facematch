@@ -247,6 +247,25 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     prompt_parts.append("The result must look like the EXACT same person in the EXACT same photo, with different makeup only.")
     prompt_text = "\n".join(prompt_parts)
 
+    # Choose model based on config
+    image_model = os.environ.get("IMAGE_MODEL", "dashscope")
+    print(f"[transfer] Using model: {image_model}")
+
+    if image_model == "minimax":
+        result = await _transfer_minimax(data, prompt_text)
+    else:
+        result = await _transfer_dashscope(data_uri, prompt_text)
+
+    # Record usage
+    if user_id:
+        _record_usage(user_id, "transfer")
+
+    return result
+
+
+async def _transfer_dashscope(data_uri: str, prompt_text: str):
+    """Use DashScope wan2.7-image-pro for transfer"""
+    from dashscope import MultiModalConversation
     messages = [{"role": "user", "content": [{"image": data_uri}, {"text": prompt_text}]}]
     resp = MultiModalConversation.call(
         model="wan2.7-image-pro", messages=messages, api_key=KEY,
@@ -256,12 +275,37 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     if result.get("status_code") != 200:
         raise HTTPException(500, f"生成失败: {result.get('message', 'unknown')}")
     img_url = result["output"]["choices"][0]["message"]["content"][0]["image"]
-
-    # Record usage
-    if user_id:
-        _record_usage(user_id, "transfer")
-
     return {"result_url": img_url}
+
+
+async def _transfer_minimax(original_data: bytes, prompt_text: str):
+    """Use MiniMax image-01 for transfer with subject reference"""
+    import base64
+    mm_key = os.environ.get("MINIMAX_API_KEY", "")
+    mm_url = os.environ.get("MINIMAX_API_URL", "https://api.minimaxi.com/v1/image_generation")
+    img_b64_str = base64.b64encode(original_data).decode()
+    payload = {
+        "model": "image-01",
+        "prompt": prompt_text,
+        "subject_reference": [{
+            "type": "character",
+            "image_file": f"data:image/jpeg;base64,{img_b64_str}"
+        }],
+        "n": 1,
+    }
+    headers = {"Authorization": f"Bearer {mm_key}", "Content-Type": "application/json"}
+    resp = requests.post(mm_url, json=payload, headers=headers, timeout=120)
+    if resp.status_code != 200:
+        raise HTTPException(500, f"MiniMax生成失败: {resp.text[:200]}")
+    result = resp.json()
+    # Check base_resp
+    base = result.get("base_resp", {})
+    if base.get("status_code", -1) != 0:
+        raise HTTPException(500, f"MiniMax错误: {base.get('status_msg', 'unknown')}")
+    img_urls = result.get("data", {}).get("image_urls", [])
+    if not img_urls:
+        raise HTTPException(500, f"MiniMax返回无图片")
+    return {"result_url": img_urls[0]}
 
 
 # ─── 历史模块 ───────────────────────────────
