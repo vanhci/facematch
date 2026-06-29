@@ -10,7 +10,18 @@ import '../services/api_service.dart';
 class MatchProvider extends ChangeNotifier {
   final MakeupApi _api;
 
-  MatchProvider({MakeupApi? api}) : _api = api ?? ApiService();
+  MatchProvider({MakeupApi? api}) : _api = api ?? ApiService() {
+    // Listen to auth changes to reload data on login/logout
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.session != null) {
+        _loadUsage();
+        _loadHistory();
+      } else {
+        _history.clear();
+        notifyListeners();
+      }
+    });
+  }
 
   // User
   String? get userId => Supabase.instance.client.auth.currentUser?.id;
