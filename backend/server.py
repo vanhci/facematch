@@ -163,6 +163,7 @@ async def get_usage(user_id: str):
     users = r.json()
     if not users:
         # Auto-create user record for Auth users
+        limit = int(os.environ.get("DAILY_LIMIT", "999"))
         today = datetime.date.today().isoformat()
         payload = {"id": user_id, "nickname": "用户", "created_at": datetime.datetime.utcnow().isoformat(),
                    "last_login": datetime.datetime.utcnow().isoformat(),
@@ -170,8 +171,8 @@ async def get_usage(user_id: str):
         try:
             r2 = requests.post(url, headers=h, json=payload, timeout=10)
             if r2.status_code in (200, 201):
-                return {"tier": "free", "daily_usage": 0, "daily_limit": 3,
-                        "bonus_credits": 0, "remaining": 3, "is_premium": False}
+                return {"tier": "free", "daily_usage": 0, "daily_limit": limit,
+                        "bonus_credits": 0, "remaining": limit, "is_premium": False}
         except:
             pass
         raise HTTPException(404, "用户不存在")
@@ -180,7 +181,7 @@ async def get_usage(user_id: str):
     is_premium = user["tier"] == "premium" and (user.get("premium_expires_at") is None or
                                                  user["premium_expires_at"] >= today)
     daily = 0 if user.get("daily_usage_date") != today else user["daily_usage"]
-    limit = 999 if is_premium else 3
+    limit = 999 if is_premium else int(os.environ.get("DAILY_LIMIT", "999"))
     remaining = max(0, limit - daily) + (user["bonus_credits"] or 0)
     return {"tier": user["tier"], "daily_usage": daily, "daily_limit": limit,
             "bonus_credits": user["bonus_credits"] or 0, "remaining": remaining, "is_premium": is_premium}
@@ -253,6 +254,8 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
 
     if image_model == "minimax":
         result = await _transfer_minimax(data, prompt_text)
+    elif image_model == "qwen-edit":
+        result = await _transfer_qwen_edit(data, prompt_text)
     else:
         result = await _transfer_dashscope(data_uri, prompt_text)
 
@@ -306,6 +309,36 @@ async def _transfer_minimax(original_data: bytes, prompt_text: str):
     if not img_urls:
         raise HTTPException(500, f"MiniMax返回无图片")
     return {"result_url": img_urls[0]}
+
+
+async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
+    """Use Qwen-Image-Edit-Plus for precise makeup transfer"""
+    import base64
+    img_b64 = base64.b64encode(original_data).decode()
+    mm_url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+    payload = {
+        "model": "qwen-image-edit-plus-2025-12-15",
+        "input": {
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"image": f"data:image/jpeg;base64,{img_b64}"},
+                    {"text": prompt_text}
+                ]
+            }]
+        },
+        "parameters": {"result_format": "message"}
+    }
+    headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
+    resp = requests.post(mm_url, json=payload, headers=headers, timeout=120)
+    if resp.status_code != 200:
+        raise HTTPException(500, f"Qwen-Edit生成失败: {resp.text[:200]}")
+    result = resp.json()
+    images = result.get("output", {}).get("choices", [{}])[0].get("message", {}).get("content", [])
+    for item in images:
+        if "image" in item:
+            return {"result_url": item["image"]}
+    raise HTTPException(500, "Qwen-Edit返回无图片")
 
 
 # ─── 历史模块 ───────────────────────────────
