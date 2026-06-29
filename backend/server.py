@@ -1,8 +1,17 @@
 import os, base64, json, uuid, datetime
+from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import requests
+
+# Load .env file if exists
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    for line in env_path.read_text().splitlines():
+        if "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
 
 app = FastAPI(title="FaceMatch API", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -145,13 +154,26 @@ async def login(phone: str = Form(...), nickname: str = Form(default="")):
 
 @app.get("/api/v2/user/usage/{user_id}")
 async def get_usage(user_id: str):
-    """查询用户用量和剩余次数"""
+    """查询用户用量和剩余次数，自动创建用户记录"""
     url = f"{SUPABASE_URL}/rest/v1/facematch_users"
-    r = requests.get(url, headers=supabase_headers(),
+    h = supabase_headers()
+    r = requests.get(url, headers=h,
                      params={"id": f"eq.{user_id}", "select": "tier,daily_usage,daily_usage_date,bonus_credits,premium_expires_at"},
                      timeout=10)
     users = r.json()
     if not users:
+        # Auto-create user record for Auth users
+        today = datetime.date.today().isoformat()
+        payload = {"id": user_id, "nickname": "用户", "created_at": datetime.datetime.utcnow().isoformat(),
+                   "last_login": datetime.datetime.utcnow().isoformat(),
+                   "tier": "free", "daily_usage": 0, "daily_usage_date": today}
+        try:
+            r2 = requests.post(url, headers=h, json=payload, timeout=10)
+            if r2.status_code in (200, 201):
+                return {"tier": "free", "daily_usage": 0, "daily_limit": 3,
+                        "bonus_credits": 0, "remaining": 3, "is_premium": False}
+        except:
+            pass
         raise HTTPException(404, "用户不存在")
     user = users[0]
     today = datetime.date.today().isoformat()
@@ -266,6 +288,7 @@ async def save_history(data: dict):
         "created_at": datetime.datetime.utcnow().isoformat()
     }
     r = requests.post(url, headers=h, json=record, timeout=10)
+    print(f"[save_history] Supabase response: {r.status_code} {r.text[:200]}")
     if r.status_code not in (200, 201):
         raise HTTPException(500, "保存历史失败")
     return r.json()[0] if r.text and r.text != "[]" else record
