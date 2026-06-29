@@ -237,12 +237,12 @@ class MatchProvider extends ChangeNotifier {
 
   String _userId() => userId ?? '';
 
-  bool _isNetworkError(Object e) {
-    final m = e.toString().toLowerCase();
-    return m.contains('dioexception') ||
-        m.contains('socketexception') ||
-        m.contains('connection') ||
-        m.contains('timeout');
+  bool _isNetworkError(Object error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('dioexception') && message.contains('connection')) return true;
+    if (message.contains('socketexception')) return true;
+    if (message.contains('connection refused')) return true;
+    return false;
   }
 
   void _finishCancelled() {
@@ -275,6 +275,11 @@ class MatchProvider extends ChangeNotifier {
     _isAnalyzing = false;
     _isGenerating = false;
     _error = null;
+    notifyListeners();
+  }
+
+  void setResultImage(File file) {
+    _resultImage = file;
     notifyListeners();
   }
 

@@ -235,17 +235,17 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
         makeup_desc = hair_desc = accessory_desc = ""
 
     prompt_parts = ["Absolute rules:"]
-    prompt_parts.append("1. Do NOT change: face shape, eyes, nose, mouth, skin texture, facial structure, identity")
-    prompt_parts.append("2. Do NOT change: background, clothing, hair style structure, body position, image composition")
-    prompt_parts.append("3. Do NOT change: lighting, shadows, photo angle, person's posture")
-    prompt_parts.append("4. ONLY change: makeup colors and placement on the face")
+    prompt_parts.append("1. Do NOT change: face shape, eyes, nose, mouth, identity, skin texture")
+    prompt_parts.append("2. Do NOT change: clothing, background, lighting, body position, image composition")
+    prompt_parts.append("3. Makeup should be subtle and natural, not heavy or exaggerated")
+    prompt_parts.append("4. You CAN change: hairstyle and accessories (earrings, necklaces, etc.) as described below")
     if makeup_desc:
-        prompt_parts.append(f"Target makeup: {makeup_desc}")
+        prompt_parts.append(f"Target makeup (keep subtle): {makeup_desc}")
     if hair_desc:
-        prompt_parts.append(f"Note hairstyle reference: {hair_desc[:80]}")
+        prompt_parts.append(f"Hairstyle to apply: {hair_desc[:80]}")
     if accessory_desc:
-        prompt_parts.append(f"Note accessories reference: {accessory_desc[:80]}")
-    prompt_parts.append("The result must look like the EXACT same person in the EXACT same photo, with different makeup only.")
+        prompt_parts.append(f"Accessories to apply: {accessory_desc[:80]}")
+    prompt_parts.append("IMPORTANT: Keep clothing exactly as is. Make the makeup look natural and soft, not heavy.")
     prompt_text = "\n".join(prompt_parts)
 
     # Choose model based on config
@@ -332,7 +332,13 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
     headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
     resp = requests.post(mm_url, json=payload, headers=headers, timeout=120)
     if resp.status_code != 200:
-        raise HTTPException(500, f"Qwen-Edit生成失败: {resp.text[:200]}")
+        err_msg = resp.text[:200]
+        try:
+            err_detail = resp.json()
+            err_msg = err_detail.get("output", {}).get("choices", [{}])[0].get("message", {}).get("content", str(err_detail)[:200])
+        except:
+            pass
+        raise HTTPException(500, f"生成失败: {err_msg}")
     result = resp.json()
     images = result.get("output", {}).get("choices", [{}])[0].get("message", {}).get("content", [])
     for item in images:
