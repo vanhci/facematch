@@ -63,8 +63,8 @@ p {{ font-size: 14px; color: #888; line-height: 1.6; margin: 0; }}
 <div class="card">
 <div class="icon">✅</div>
 <h1>邮箱确认成功</h1>
-<p>你的邮箱已通过验证，现在可以返回 App 登录了。</p>
-<a class="btn" href="facematch://">打开颜摹 App</a>
+<p>你的邮箱已通过验证，注册已完成！</p>
+<p style="margin-top:8px;font-size:13px;color:#aaa">现在可以关闭此页面，打开 App 登录即可。</p>
 </div></body></html>""")
     else:
         return HTMLResponse(f"""
@@ -90,7 +90,7 @@ BASE = "https://dashscope.aliyuncs.com"
 
 # Supabase
 SUPABASE_URL = "https://woqlrmmlhluaeaizrizg.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcWxybW1saGx1YWVhaXpyaXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTAwOTUsImV4cCI6MjA5ODIyNjA5NX0.OLkvc5RWv5EQ--nCixs61HD8jculYiGKqijYqO-BxPQ"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcWxybW1saGx1YWVhaXpyaXpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjY1MDA5NSwiZXhwIjoyMDk4MjI2MDk1fQ.zSzm6_zK3t1jfv30UkaqQzv3kBFiH6-x_68TtRGHllk"
 
 
 def supabase_headers():

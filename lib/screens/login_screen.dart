@@ -44,8 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
           email: email,
           password: password,
         );
-        _showSuccess('注册成功！请查看邮箱确认（如已开启邮箱确认），然后登录。');
-        setState(() => _isRegister = false);
+        _onRegisterSuccess();
       } else {
         await Supabase.instance.client.auth.signInWithPassword(
           email: email,
@@ -60,6 +59,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = false);
+  }
+
+  bool _showRegisterSuccess = false;
+
+  void _onRegisterSuccess() {
+    setState(() {
+      _showRegisterSuccess = true;
+      _isRegister = false;
+      _emailController.clear();
+      _passwordController.clear();
+    });
   }
 
   String _mapAuthError(String msg) {
@@ -107,6 +117,46 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Widget _buildRegisterSuccess() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80, height: 80,
+            decoration: BoxDecoration(
+              gradient: AppColors.gradientRose,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              boxShadow: AppColors.cardShadow,
+            ),
+            child: const Icon(Icons.mark_email_read, color: Colors.white, size: 44),
+          ),
+          const SizedBox(height: 24),
+          const Text('注册成功', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: AppColors.neutral700)),
+          const SizedBox(height: 12),
+          const Text('确认邮件已发送到你的邮箱', style: TextStyle(fontSize: 15, color: AppColors.neutral500)),
+          const SizedBox(height: 6),
+          const Text('请查看收件箱（或垃圾邮件），点击确认链接后即可登录', style: TextStyle(fontSize: 13, color: AppColors.neutral400), textAlign: TextAlign.center),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity, height: 52,
+            child: ElevatedButton(
+              onPressed: () => setState(() => _showRegisterSuccess = false),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: const Color(0xFF4A1A2A),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+              ),
+              child: const Text('去登录', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
+            child: _showRegisterSuccess ? _buildRegisterSuccess() : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
