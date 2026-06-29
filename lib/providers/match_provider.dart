@@ -179,7 +179,9 @@ class MatchProvider extends ChangeNotifier {
 
     try {
       // Step 1: Analyze reference image
+      await BackgroundTask.start();
       _analysis = await _api.analyzeMakeup(_referenceImage!, _userId());
+      await BackgroundTask.end();
       if (_isCancelled) {
         _finishCancelled();
         return;
