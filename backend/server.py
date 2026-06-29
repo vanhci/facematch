@@ -90,7 +90,7 @@ BASE = "https://dashscope.aliyuncs.com"
 
 # Supabase
 SUPABASE_URL = "https://woqlrmmlhluaeaizrizg.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcWxybW1saGx1YWVhaXpyaXpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjY1MDA5NSwiZXhwIjoyMDk4MjI2MDk1fQ.zSzm6_zK3t1jfv30UkaqQzv3kBFiH6-x_68TtRGHllk"
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 
 def supabase_headers():
