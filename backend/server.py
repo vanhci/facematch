@@ -234,19 +234,11 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     except (json.JSONDecodeError, TypeError):
         makeup_desc = hair_desc = accessory_desc = ""
 
-    prompt_parts = ["ABSOLUTE RULES:"]
-    prompt_parts.append("1. DO NOT change: face, eyes, nose, mouth, skin texture, identity, glasses")
-    prompt_parts.append("2. DO NOT change: clothing, background, lighting, body position, image composition")
-    prompt_parts.append("3. Make up must look NATURAL and BARE - think zero makeup look")
-    prompt_parts.append("4. If the original person already has makeup, KEEP IT minimal")
-    prompt_parts.append("5. ONLY add a VERY LIGHT tint of color described below")
+    prompt_parts = ["Make a very subtle natural makeup change."]
+    prompt_parts.append("Do NOT add eyeliner, bold lipstick, or heavy blush.")
     if makeup_desc:
-        prompt_parts.append(f"Reference (extremely light application): {makeup_desc}")
-    if hair_desc:
-        prompt_parts.append(f"Hairstyle: {hair_desc[:80]}")
-    if accessory_desc:
-        prompt_parts.append(f"Accessories: {accessory_desc[:80]}")
-    prompt_parts.append("The result must be indistinguishable from the original photo except for a very subtle makeup change. Less is more.")
+        prompt_parts.append(f"Reference: {makeup_desc}")
+    prompt_parts.append("Keep everything else unchanged.")
     prompt_text = "\n".join(prompt_parts)
 
     # Choose model based on config
@@ -318,7 +310,7 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
     img_b64 = base64.b64encode(original_data).decode()
     mm_url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
     payload = {
-        "model": "qwen-image-edit-plus-2025-12-15",
+        "model": "qwen-image-edit-max",
         "input": {
             "messages": [{
                 "role": "user",
@@ -328,7 +320,7 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
                 ]
             }]
         },
-        "parameters": {"result_format": "message", "edit_strength": 0.15}
+        "parameters": {"result_format": "message"}
     }
     headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
     resp = requests.post(mm_url, json=payload, headers=headers, timeout=120)

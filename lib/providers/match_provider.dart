@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/makeup_analysis.dart';
 import '../services/api_service.dart';
+import '../services/background_task.dart';
 
 class MatchProvider extends ChangeNotifier {
   final MakeupApi _api;
@@ -188,11 +189,13 @@ class MatchProvider extends ChangeNotifier {
       notifyListeners();
 
       // Step 2: Generate makeup transfer
+      await BackgroundTask.start();
       final transferResult = await _api.transferMakeup(
         targetImage: _selfieImage!,
         analysis: jsonEncode(_analysis!.toCategoryMap()),
         userId: _userId(),
       );
+      await BackgroundTask.end();
       if (_isCancelled) { _finishCancelled(); return; }
 
       _lastResultUrl = transferResult.resultUrl;
