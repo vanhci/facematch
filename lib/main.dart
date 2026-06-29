@@ -28,9 +28,16 @@ class FaceMatchApp extends StatelessWidget {
         title: '颜摹',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: Supabase.instance.client.auth.currentUser != null
-            ? const MainShell()
-            : const LoginScreen(),
+        home: StreamBuilder(
+          stream: Supabase.instance.client.auth.onAuthStateChange,
+          builder: (ctx, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            if (snap.data?.session != null) return const MainShell();
+            return const LoginScreen();
+          },
+        ),
       ),
     );
   }
