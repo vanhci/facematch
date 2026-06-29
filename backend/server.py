@@ -233,21 +233,24 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     except (json.JSONDecodeError, TypeError):
         makeup_desc = hair_desc = accessory_desc = ""
 
-    prompt_parts = ["Apply ONLY the makeup style to this person. Do NOT change their face shape,五官, facial structure, or identity."]
+    prompt_parts = ["Absolute rules:"]
+    prompt_parts.append("1. Do NOT change: face shape, eyes, nose, mouth, skin texture, facial structure, identity")
+    prompt_parts.append("2. Do NOT change: background, clothing, hair style structure, body position, image composition")
+    prompt_parts.append("3. Do NOT change: lighting, shadows, photo angle, person's posture")
+    prompt_parts.append("4. ONLY change: makeup colors and placement on the face")
     if makeup_desc:
-        prompt_parts.append(f"Makeup: {makeup_desc}")
+        prompt_parts.append(f"Target makeup: {makeup_desc}")
     if hair_desc:
-        prompt_parts.append(f"Hairstyle: {hair_desc[:120]}")
+        prompt_parts.append(f"Note hairstyle reference: {hair_desc[:80]}")
     if accessory_desc:
-        prompt_parts.append(f"Accessories: {accessory_desc[:120]}")
-    prompt_parts.append("CRITICAL: Preserve the original person's identity, face shape, nose, eyes, mouth, and skin texture EXACTLY as they are.")
-    prompt_parts.append("Only change the makeup colors and placement. The person must remain recognizable as the same individual.")
+        prompt_parts.append(f"Note accessories reference: {accessory_desc[:80]}")
+    prompt_parts.append("The result must look like the EXACT same person in the EXACT same photo, with different makeup only.")
     prompt_text = "\n".join(prompt_parts)
 
     messages = [{"role": "user", "content": [{"image": data_uri}, {"text": prompt_text}]}]
     resp = MultiModalConversation.call(
         model="wan2.7-image-pro", messages=messages, api_key=KEY,
-        parameters={"size": "1328*1328", "n": 1, "watermark": False, "denoise_strength": 0.15}
+        parameters={"size": "1328*1328", "n": 1, "watermark": False, "denoise_strength": 0.1}
     )
     result = resp if isinstance(resp, dict) else resp.__dict__
     if result.get("status_code") != 200:

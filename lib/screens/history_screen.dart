@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 import '../providers/match_provider.dart';
 import '../screens/result_screen.dart';
 import '../theme/app_theme.dart';
@@ -107,17 +108,11 @@ class _HistoryCard extends StatelessWidget {
                 color: AppColors.neutral100,
               ),
               clipBehavior: Clip.antiAlias,
-              child:
-                  result.status == Status.completed &&
-                      result.resultImagePath != null
-                  ? Image.file(
-                      File(result.resultImagePath!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.broken_image_outlined,
-                        color: AppColors.neutral300,
-                      ),
-                    )
+              child: result.status == Status.completed &&
+                      (result.resultImagePath != null || result.resultImageUrl != null)
+                  ? (result.resultImagePath != null
+                      ? Image.file(File(result.resultImagePath!), fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, color: AppColors.neutral300))
+                      : Image.network(result.resultImageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.image_outlined, color: AppColors.neutral300)))
                   : result.status == Status.completed
                   ? const Icon(
                       Icons.image_outlined,
@@ -158,13 +153,31 @@ class _HistoryCard extends StatelessWidget {
             ),
             if (result.status == Status.completed)
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   final provider = context.read<MatchProvider>();
                   if (result.resultImagePath != null) {
                     provider.loadHistoryResult(result);
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const ResultScreen()),
                     );
+                  } else if (result.resultImageUrl != null) {
+                    // Download cloud image then view
+                    provider.loadHistoryResult(result);
+                    try {
+                      final resp = await Dio().get(
+                        result.resultImageUrl!,
+                        options: Options(responseType: ResponseType.bytes),
+                      );
+                      final tempDir = Directory.systemTemp;
+                      final path = '${tempDir.path}/history_${result.id}.png';
+                      await File(path).writeAsBytes(resp.data as List<int>);
+                      provider.setResultImage(File(path));
+                    } catch (_) {}
+                    if (context.mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ResultScreen()),
+                      );
+                    }
                   }
                 },
                 child: Container(
