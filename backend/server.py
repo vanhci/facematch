@@ -234,18 +234,19 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     except (json.JSONDecodeError, TypeError):
         makeup_desc = hair_desc = accessory_desc = ""
 
-    prompt_parts = ["Absolute rules:"]
-    prompt_parts.append("1. Do NOT change: face shape, eyes, nose, mouth, identity, skin texture")
-    prompt_parts.append("2. Do NOT change: clothing, background, lighting, body position, image composition")
-    prompt_parts.append("3. Makeup should be subtle and natural, not heavy or exaggerated")
-    prompt_parts.append("4. You CAN change: hairstyle and accessories (earrings, necklaces, etc.) as described below")
+    prompt_parts = ["ABSOLUTE RULES:"]
+    prompt_parts.append("1. DO NOT change: face, eyes, nose, mouth, skin texture, identity, glasses")
+    prompt_parts.append("2. DO NOT change: clothing, background, lighting, body position, image composition")
+    prompt_parts.append("3. Make up must look NATURAL and BARE - think zero makeup look")
+    prompt_parts.append("4. If the original person already has makeup, KEEP IT minimal")
+    prompt_parts.append("5. ONLY add a VERY LIGHT tint of color described below")
     if makeup_desc:
-        prompt_parts.append(f"Target makeup (keep subtle): {makeup_desc}")
+        prompt_parts.append(f"Reference (extremely light application): {makeup_desc}")
     if hair_desc:
-        prompt_parts.append(f"Hairstyle to apply: {hair_desc[:80]}")
+        prompt_parts.append(f"Hairstyle: {hair_desc[:80]}")
     if accessory_desc:
-        prompt_parts.append(f"Accessories to apply: {accessory_desc[:80]}")
-    prompt_parts.append("IMPORTANT: Keep clothing exactly as is. Make the makeup look natural and soft, not heavy.")
+        prompt_parts.append(f"Accessories: {accessory_desc[:80]}")
+    prompt_parts.append("The result must be indistinguishable from the original photo except for a very subtle makeup change. Less is more.")
     prompt_text = "\n".join(prompt_parts)
 
     # Choose model based on config
@@ -327,7 +328,7 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
                 ]
             }]
         },
-        "parameters": {"result_format": "message"}
+        "parameters": {"result_format": "message", "edit_strength": 0.15}
     }
     headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
     resp = requests.post(mm_url, json=payload, headers=headers, timeout=120)

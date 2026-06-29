@@ -46,6 +46,9 @@ class MatchProvider extends ChangeNotifier {
   int _dailyLimit = 3;
   int _bonusCredits = 0;
 
+  // Last result URL for history
+  String? _lastResultUrl;
+
   // Getters
   File? get referenceImage => _referenceImage;
   File? get selfieImage => _selfieImage;
@@ -185,17 +188,15 @@ class MatchProvider extends ChangeNotifier {
       notifyListeners();
 
       // Step 2: Generate makeup transfer
-      final resultPath = await _api.transferMakeup(
+      final transferResult = await _api.transferMakeup(
         targetImage: _selfieImage!,
         analysis: jsonEncode(_analysis!.toCategoryMap()),
         userId: _userId(),
       );
-      if (_isCancelled) {
-        _finishCancelled();
-        return;
-      }
+      if (_isCancelled) { _finishCancelled(); return; }
 
-      if (resultPath.isNotEmpty) _resultImage = File(resultPath);
+      _lastResultUrl = transferResult.resultUrl;
+      if (transferResult.filePath.isNotEmpty) _resultImage = File(transferResult.filePath);
 
       _isGenerating = false;
       _dailyUsage++;
@@ -237,7 +238,7 @@ class MatchProvider extends ChangeNotifier {
           'user_id': uid,
           'reference_image_url': '',
           'selfie_image_url': '',
-          'result_image_url': '',
+          'result_image_url': _lastResultUrl ?? '',
           'analysis': _analysis?.toCategoryMap(),
         },
       );
