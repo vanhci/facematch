@@ -85,5 +85,9 @@
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>颜摹需要访问相册来保存仿妆效果图</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
 </dict>
 </plist>
