@@ -335,7 +335,7 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
         err_msg = resp.text[:200]
         try:
             err_detail = resp.json()
-            err_msg = err_detail.get("output", {}).get("choices", [{}])[0].get("message", {}).get("content", str(err_detail)[:200])
+            err_msg = str(err_detail)[:200]
         except:
             pass
         raise HTTPException(500, f"生成失败: {err_msg}")
@@ -343,6 +343,12 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
     images = result.get("output", {}).get("choices", [{}])[0].get("message", {}).get("content", [])
     for item in images:
         if "image" in item:
+            # Download image from OSS and return as base64 to avoid Flutter download issues
+            img_resp = requests.get(item["image"], timeout=60)
+            if img_resp.status_code == 200:
+                import base64
+                b64 = base64.b64encode(img_resp.content).decode()
+                return {"result_image_base64": b64, "result_url": item["image"]}
             return {"result_url": item["image"]}
     raise HTTPException(500, "Qwen-Edit返回无图片")
 

@@ -89,6 +89,17 @@ class ApiService implements MakeupApi {
       });
       final resp = await _dio.post('/api/v1/transfer', data: formData);
       final json = resp.data as Map<String, dynamic>;
+
+      // Prefer base64 image data from backend (avoids OSS download issues)
+      final base64Data = json['result_image_base64'] as String?;
+      if (base64Data != null && base64Data.isNotEmpty) {
+        final tempDir = Directory.systemTemp;
+        final outputPath = '${tempDir.path}/facematch_result_${DateTime.now().millisecondsSinceEpoch}.png';
+        await File(outputPath).writeAsBytes(base64Decode(base64Data));
+        return outputPath;
+      }
+
+      // Fallback: download from URL
       final imgResp = await Dio().get(
         json['result_url'] as String,
         options: Options(

@@ -209,7 +209,18 @@ class MatchProvider extends ChangeNotifier {
       _isGenerating = false;
       notifyListeners();
     } catch (e) {
-      _error = _isNetworkError(e) ? '网络连接异常，请检查网络后重试' : '分析失败，请重试';
+      // Extract backend error message if available
+      String errMsg = '分析失败，请重试';
+      try {
+        final dioErr = e as dynamic;
+        if (dioErr.response?.data is Map) {
+          final detail = dioErr.response!.data['detail'] as String?;
+          if (detail != null && detail.isNotEmpty) errMsg = detail;
+        } else if (dioErr.response?.data is String) {
+          errMsg = dioErr.response!.data;
+        }
+      } catch (_) {}
+      _error = _isNetworkError(e) ? '网络连接异常，请检查网络后重试' : errMsg;
       _isAnalyzing = false;
       _isGenerating = false;
       notifyListeners();
