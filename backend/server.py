@@ -7,6 +7,83 @@ import requests
 app = FastAPI(title="FaceMatch API", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+# Serve static HTML for auth confirmation
+from fastapi.responses import HTMLResponse
+
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/auth/confirm", response_class=HTMLResponse)
+async def auth_confirm(code: str = "", type: str = ""):
+    """Handle email confirmation redirect from Supabase Auth"""
+    if not code:
+        return HTMLResponse("""
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>颜摹 - 邮箱确认</title>
+<style>
+body { font-family: -apple-system, sans-serif; background: #fcf5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+.card { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); max-width: 400px; }
+.icon { font-size: 48px; margin-bottom: 16px; }
+h1 { font-size: 22px; color: #333; margin: 0 0 8px; }
+p { font-size: 14px; color: #888; line-height: 1.6; margin: 0; }
+.btn { display: inline-block; margin-top: 20px; padding: 12px 32px; background: #f0708d; color: white; border-radius: 16px; text-decoration: none; font-weight: 600; border: none; font-size: 15px; cursor: pointer; }
+.hidden { display: none; }
+</style></head><body>
+<div class="card">
+<div class="icon">📧</div>
+<h1>验证邮箱</h1>
+<p>请查收邮件中的确认链接，点击后即可完成注册。</p>
+<p style="margin-top:12px;font-size:12px;color:#bbb">没收到？请检查垃圾邮件。</p>
+</div></body></html>
+""")
+
+    # Verify the code via Supabase Auth API
+    try:
+        h = supabase_headers()
+        verify_url = f"{SUPABASE_URL}/auth/v1/verify"
+        payload = {"type": type or "signup", "token": code, "redirect_to": ""}
+        r = requests.post(verify_url, headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"}, json=payload, timeout=10)
+        success = r.status_code in (200, 201)
+    except Exception:
+        success = False
+
+    if success:
+        return HTMLResponse(f"""
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>颜摹 - 邮箱确认成功</title>
+<style>
+body {{ font-family: -apple-system, sans-serif; background: #fcf5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }}
+.card {{ background: white; border-radius: 24px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); max-width: 400px; }}
+.icon {{ font-size: 48px; margin-bottom: 16px; }}
+h1 {{ font-size: 22px; color: #333; margin: 0 0 8px; }}
+p {{ font-size: 14px; color: #888; line-height: 1.6; margin: 0; }}
+.btn {{ display: inline-block; margin-top: 20px; padding: 12px 32px; background: #f0708d; color: white; border-radius: 16px; text-decoration: none; font-weight: 600; }}
+</style></head><body>
+<div class="card">
+<div class="icon">✅</div>
+<h1>邮箱确认成功</h1>
+<p>你的邮箱已通过验证，现在可以返回 App 登录了。</p>
+<a class="btn" href="facematch://">打开颜摹 App</a>
+</div></body></html>""")
+    else:
+        return HTMLResponse(f"""
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>颜摹 - 确认失败</title>
+<style>
+body {{ font-family: -apple-system, sans-serif; background: #fcf5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }}
+.card {{ background: white; border-radius: 24px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); max-width: 400px; }}
+.icon {{ font-size: 48px; margin-bottom: 16px; }}
+h1 {{ font-size: 22px; color: #333; margin: 0 0 8px; }}
+p {{ font-size: 14px; color: #888; line-height: 1.6; margin: 0; }}
+</style></head><body>
+<div class="card">
+<div class="icon">❌</div>
+<h1>确认链接无效或已过期</h1>
+<p>请重新注册，确认链接有效期为 1 小时。</p>
+</div></body></html>""")
+
 # DashScope
 KEY = "sk-ws-H.RYLMMME.gTxT.MEUCIQCaj-tKLaEqh3kvvlDDKWC8nlYDfM3Ej-vi4UYJePy0EQIgJzgfIoxXYvDZedkNOIFYpAzcBBQn0AZ7tfqO4xo1xkQ"
 BASE = "https://dashscope.aliyuncs.com"
