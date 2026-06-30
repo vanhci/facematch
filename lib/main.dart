@@ -62,39 +62,46 @@ class _MainShellState extends State<MainShell> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.card),
+            top: Radius.circular(24),
           ),
-          boxShadow: AppColors.cardShadow,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.card),
+            top: Radius.circular(24),
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (i) => setState(() => _currentIndex = i),
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.neutral400,
             type: BottomNavigationBarType.fixed,
             elevation: 0,
-            selectedFontSize: 12,
-            unselectedFontSize: 12,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.3),
+            unselectedLabelStyle: const TextStyle(letterSpacing: 0.3),
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.face_retouching_natural_outlined),
-                activeIcon: Icon(Icons.face_retouching_natural),
+                icon: Icon(Icons.face_retouching_natural_outlined, size: 24),
+                activeIcon: Icon(Icons.face_retouching_natural, size: 24),
                 label: '仿妆',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.visibility_outlined),
-                activeIcon: Icon(Icons.visibility),
+                icon: Icon(Icons.visibility_outlined, size: 24),
+                activeIcon: Icon(Icons.visibility, size: 24),
                 label: '分析',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.history_outlined),
-                activeIcon: Icon(Icons.history),
+                icon: Icon(Icons.history_outlined, size: 24),
+                activeIcon: Icon(Icons.history, size: 24),
                 label: '历史',
               ),
             ],

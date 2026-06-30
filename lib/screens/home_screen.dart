@@ -92,7 +92,7 @@ class HomeScreen extends StatelessWidget {
           gradient: RadialGradient(
             center: Alignment.topLeft,
             radius: 1.5,
-            colors: [Color(0xFFFFF0F0), Color(0xFFFCF5F5), Color(0xFFF5E9E9)],
+            colors: [Color(0xFFFFF0F5), Color(0xFFFCF5F5), Color(0xFFF5E9ED)],
           ),
         ),
         child: SafeArea(
@@ -268,22 +268,33 @@ class HomeScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 56,
-      child: ElevatedButton(
-        onPressed: provider.canMatch
-            ? () => _runMatch(context, provider)
-            : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: provider.canMatch
-              ? AppColors.primary
-              : AppColors.neutral300,
-          foregroundColor: const Color(0xFF4A1A2A),
-          disabledBackgroundColor: AppColors.neutral200,
-          disabledForegroundColor: AppColors.neutral400,
-          elevation: 0,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          gradient: provider.canMatch
+              ? AppColors.gradientRose
+              : LinearGradient(colors: [AppColors.neutral300, AppColors.neutral200]),
+          boxShadow: provider.canMatch
+              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))]
+              : null,
         ),
-        child: const Text(
-          '开始仿妆',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+        child: ElevatedButton(
+          onPressed: provider.canMatch
+              ? () => _runMatch(context, provider)
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.transparent,
+            disabledForegroundColor: AppColors.neutral400,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+          ),
+          child: const Text(
+            '开始仿妆',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+          ),
         ),
       ),
     );
