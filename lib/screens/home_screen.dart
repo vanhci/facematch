@@ -233,21 +233,13 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
+                    width: 22, height: 22,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     provider.isAnalyzing ? '正在分析妆容...' : '正在生成仿妆...',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -268,34 +260,18 @@ class HomeScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 56,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          gradient: provider.canMatch
-              ? AppColors.gradientRose
-              : LinearGradient(colors: [AppColors.neutral300, AppColors.neutral200]),
-          boxShadow: provider.canMatch
-              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))]
-              : null,
+      child: ElevatedButton(
+        onPressed: provider.canMatch ? () => _runMatch(context, provider) : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: provider.canMatch ? AppColors.primary : AppColors.neutral300,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.neutral200,
+          disabledForegroundColor: AppColors.neutral400,
+          elevation: provider.canMatch ? 4 : 0,
+          shadowColor: provider.canMatch ? AppColors.primary : Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
         ),
-        child: ElevatedButton(
-          onPressed: provider.canMatch
-              ? () => _runMatch(context, provider)
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: Colors.transparent,
-            disabledForegroundColor: AppColors.neutral400,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
-          ),
-          child: const Text(
-            '开始仿妆',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-          ),
-        ),
+        child: const Text('开始仿妆', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
       ),
     );
   }

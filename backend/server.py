@@ -236,6 +236,7 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
 
     prompt_parts = ["Make a very subtle natural makeup change."]
     prompt_parts.append("Do NOT add eyeliner, bold lipstick, or heavy blush.")
+    prompt_parts.append("Lip color must be very light and natural - barely any color.")
     if makeup_desc:
         prompt_parts.append(f"Reference: {makeup_desc}")
     prompt_parts.append("Keep everything else unchanged.")
