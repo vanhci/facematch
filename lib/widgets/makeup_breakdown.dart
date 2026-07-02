@@ -110,15 +110,15 @@ class _CategoryCardState extends State<_CategoryCard>
       case '眼妆':
         return Icons.visibility_outlined;
       case '眉妆':
-        return Icons.brush_outlined;
+        return Icons.edit_outlined;
       case '腮红':
-        return Icons.favorite_outline;
+        return Icons.palette_outlined;
       case '唇妆':
         return Icons.water_drop_outlined;
       case '修容':
         return Icons.tune_outlined;
       case '发型':
-        return Icons.auto_fix_high_outlined;
+        return Icons.content_cut;
       case '配饰':
         return Icons.diamond_outlined;
       default:

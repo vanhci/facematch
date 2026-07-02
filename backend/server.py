@@ -243,9 +243,9 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     except (json.JSONDecodeError, TypeError):
         makeup_desc = hair_desc = accessory_desc = ""
 
-    prompt_parts = ["Apply a very light, barely-there makeup."]
-    prompt_parts.append("IMPORTANT: Makeup intensity should be minimal.")
-    prompt_parts.append("Blush: just a trace. Lipstick: very light, close to natural lip color.")
+    prompt_parts = ["Make the makeup VERY LIGHT - barely visible."]
+    prompt_parts.append("Lipstick: extremely thin layer, almost transparent. Blush: the lightest possible touch.")
+    prompt_parts.append("The makeup should look like the person is wearing almost nothing.")
     prompt_parts.append("CRITICAL: Keep the original skin color and tone EXACTLY as is. Do NOT whiten or lighten the skin.")
     if makeup_desc:
         prompt_parts.append(f"Reference: {makeup_desc}")
@@ -318,6 +318,49 @@ async def _transfer_minimax(original_data: bytes, prompt_text: str):
     if not img_urls:
         raise HTTPException(500, f"MiniMax返回无图片")
     return {"result_url": img_urls[0]}
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy():
+    return """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>颜摹 - 隐私政策</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:#fcf5f5;margin:0;padding:20px;color:#333;line-height:1.8}
+.card{max-width:720px;margin:20px auto;background:#fff;border-radius:20px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+h1{font-size:24px;color:#2d2d2d;margin:0 0 8px}
+h2{font-size:18px;color:#2d2d2d;margin:24px 0 8px}
+p{font-size:14px;color:#666;margin:0 0 12px}
+.footer{font-size:12px;color:#aaa;text-align:center;margin-top:32px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>隐私政策</h1>
+<p>最后更新：2026年7月2日</p>
+
+<h2>1. 信息收集</h2>
+<p>颜摹（以下简称"本应用"）仅收集您主动上传的照片数据用于妆容分析和仿妆生成。我们不会收集您的姓名、手机号、位置等个人信息。</p>
+
+<h2>2. 照片数据</h2>
+<p>您上传的照片仅用于实时妆容分析和仿妆效果生成。处理完成后，照片数据会在服务器上保留不超过24小时后自动删除。您可以随时在应用中删除历史记录。</p>
+
+<h2>3. 第三方服务</h2>
+<p>本应用使用阿里云DashScope API进行图像分析处理。您的照片数据会在处理过程中传输至阿里云服务器，处理完成后不会存储在第三方服务器上。</p>
+
+<h2>4. 数据安全</h2>
+<p>我们采用行业标准的安全措施保护您的数据传输和存储安全。所有网络通信均使用加密传输（HTTPS）。</p>
+
+<h2>5. 联系我们</h2>
+<p>如有任何关于隐私政策的疑问，请联系我们：vanhci@live.cn</p>
+
+<div class="footer">© 2026 颜摹. All rights reserved.</div>
+</div>
+</body>
+</html>"""
 
 
 async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):

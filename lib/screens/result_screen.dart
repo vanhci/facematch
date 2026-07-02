@@ -13,18 +13,77 @@ import '../widgets/makeup_breakdown.dart';
 class ResultScreen extends StatelessWidget {
   const ResultScreen({super.key});
 
+  Future<void> _shareComposite(BuildContext context, MatchProvider provider) async {
+    final resultImage = provider.resultImage;
+    final refImage = provider.referenceImage;
+    if (resultImage == null || refImage == null) return;
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final ts = DateTime.now().millisecondsSinceEpoch;
+
+      // Decode both images
+      final refCodec = await ui.instantiateImageCodec(await refImage.readAsBytes());
+      final resCodec = await ui.instantiateImageCodec(await resultImage.readAsBytes());
+      final refFrame = await refCodec.getNextFrame();
+      final resFrame = await resCodec.getNextFrame();
+      final refImg = refFrame.image;
+      final resImg = resFrame.image;
+
+      // Scale both to same dimensions (fit within target rect, centered)
+      const imgW = 300.0;  // fixed width per image
+      const targetH = 600.0;
+      const gap = 8.0;
+      final totalW = (imgW * 2 + gap).toInt();
+
+      // Helper to draw image centered in target rect
+      void drawImageCentered(ui.Canvas c, ui.Image img, double x) {
+        final scale = (imgW / img.width) < (targetH / img.height) 
+            ? imgW / img.width : targetH / img.height;
+        final sw = img.width * scale;
+        final sh = img.height * scale;
+        final ox = x + (imgW - sw) / 2;
+        final oy = (targetH - sh) / 2;
+        c.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+            Rect.fromLTWH(ox, oy, sw, sh), Paint());
+      }
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, totalW.toDouble(), targetH));
+      canvas.drawRect(Rect.fromLTWH(0, 0, totalW.toDouble(), targetH), Paint()..color = Colors.white);
+      
+      drawImageCentered(canvas, refImg, 0);
+      drawImageCentered(canvas, resImg, imgW + gap);
+
+      final picture = recorder.endRecording();
+      final compositeImg = await picture.toImage(totalW, targetH.toInt());
+      final byteData = await compositeImg.toByteData(format: ui.ImageByteFormat.png);
+
+      refImg.dispose();
+      resImg.dispose();
+      compositeImg.dispose();
+
+      final path = '${dir.path}/composite_$ts.png';
+      await File(path).writeAsBytes(byteData!.buffer.asUint8List());
+
+      final box = context.findRenderObject() as RenderBox?;
+      final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+      await Share.shareXFiles([XFile(path)], text: '颜摹仿妆', sharePositionOrigin: rect);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('分享失败: $e'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: Text(
-          '仿妆效果',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.neutral800,
-          ),
-        ),
+        title: Text('仿妆效果', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: AppColors.neutral800)),
         centerTitle: true,
         backgroundColor: AppColors.bgColor,
         elevation: 0,
@@ -41,153 +100,54 @@ class ResultScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Comparison slider
                 ComparisonSlider(
                   beforeImage: provider.selfieImage,
                   afterImage: provider.resultImage,
                   beforeLabel: '原图',
                   afterLabel: '仿妆',
                 ),
-
                 const SizedBox(height: 24),
-
-                // Action buttons
                 Row(
                   children: [
-                    Expanded(
-                      child: _ActionCard(
-                        icon: Icons.save_outlined,
-                        label: '保存',
-                        color: AppColors.primary,
-                        onTap: () async {
-                          final provider = context.read<MatchProvider>();
-                          if (provider.resultImage != null) {
-                            try {
-                              await ImageGallerySaver.saveFile(
-                                provider.resultImage!.path,
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('已保存到相册'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('保存失败: $e'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ActionCard(
-                        icon: Icons.ios_share_outlined,
-                        label: '分享',
-                        color: AppColors.primary,
-                        onTap: () async {
-                          final resultImage = provider.resultImage;
-                          final refImage = provider.referenceImage;
-                          if (resultImage == null || refImage == null) return;
+                    Expanded(child: _ActionCard(
+                      icon: Icons.save_outlined, label: '保存', color: AppColors.primary,
+                      onTap: () async {
+                        final provider = context.read<MatchProvider>();
+                        if (provider.resultImage != null) {
                           try {
-                            final dir = await getApplicationDocumentsDirectory();
-                            final ts = DateTime.now().millisecondsSinceEpoch;
-                            
-                            // Create side-by-side composite
-                            final refBytes = await refImage.readAsBytes();
-                            final resultBytes = await resultImage.readAsBytes();
-                            final refCodec = await ui.instantiateImageCodec(refBytes);
-                            final resultCodec = await ui.instantiateImageCodec(resultBytes);
-                            final refFrame = await refCodec.getNextFrame();
-                            final resultFrame = await resultCodec.getNextFrame();
-                            final refImg = refFrame.image;
-                            final resultImg = resultFrame.image;
-                            
-                            // Calculate dimensions - use max height and fit both
-                            final gap = 8.0;
-                            final maxH = refImg.height.toDouble() > resultImg.height.toDouble()
-                                ? refImg.height.toDouble() : resultImg.height.toDouble();
-                            final refW = refImg.width.toDouble();
-                            final resW = resultImg.width.toDouble();
-                            final totalW = refW + gap + resW;
-                            
-                            // Draw composite
-                            final recorder = ui.PictureRecorder();
-                            final canvas = Canvas(recorder);
-                            // White background
-                            canvas.drawRect(Rect.fromLTWH(0, 0, totalW, maxH), Paint()..color = Colors.white);
-                            // Draw reference image centered vertically
-                            final refY = (maxH - refImg.height) / 2;
-                            canvas.drawImage(refImg, Offset(0, refY), Paint());
-                            // Draw result image centered vertically
-                            final resY = (maxH - resultImg.height) / 2;
-                            canvas.drawImage(resultImg, Offset(refW + gap, resY), Paint());
-                            
-                            // Add labels
-                            final textBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
-                              textAlign: TextAlign.center, fontSize: 14, fontWeight: FontWeight.w600,
-                            ));
-                            // Render to image
-                            final picture = recorder.endRecording();
-                            final compositeImg = await picture.toImage(totalW.toInt(), maxH.toInt());
-                            
-                            // Encode as PNG
-                            final byteData = await compositeImg.toByteData(format: ui.ImageByteFormat.png);
-                            final compositePath = '${dir.path}/composite_$ts.png';
-                            await File(compositePath).writeAsBytes(byteData!.buffer.asUint8List());
-                            
-                            // Cleanup
-                            refImg.dispose(); resultImg.dispose(); compositeImg.dispose();
-                            
-                            final box = context.findRenderObject() as RenderBox?;
-                            final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-                            await Share.shareXFiles(
-                              [XFile(compositePath)],
-                              text: '颜摹仿妆 - 看看我的妆容效果',
-                              sharePositionOrigin: rect,
-                            );
+                            await ImageGallerySaver.saveFile(provider.resultImage!.path);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('已保存到相册'), behavior: SnackBarBehavior.floating),
+                              );
+                            }
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('分享失败: $e'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
+                                SnackBar(content: Text('保存失败: $e'), behavior: SnackBarBehavior.floating),
                               );
                             }
                           }
-                        },
-                      ),
-                    ),
+                        }
+                      },
+                    )),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: _ActionCard(
-                        icon: Icons.refresh_outlined,
-                        label: '重新选图',
-                        color: AppColors.neutral500,
-                        onTap: () {
-                          provider.reset();
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
+                    Expanded(child: _ActionCard(
+                      icon: Icons.ios_share_outlined, label: '分享', color: AppColors.primary,
+                      onTap: () => _shareComposite(context, provider),
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: _ActionCard(
+                      icon: Icons.refresh_outlined, label: '重新选图', color: AppColors.neutral500,
+                      onTap: () {
+                        provider.reset();
+                        Navigator.pop(context);
+                      },
+                    )),
                   ],
                 ),
-
                 const SizedBox(height: 32),
-
-                // Makeup analysis
                 if (provider.analysis != null) ...[
-                  // Reference image preview
                   if (provider.referenceImage != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
@@ -196,34 +156,17 @@ class ResultScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.75),
                           borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.6),
-                          ),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
                           boxShadow: AppColors.cardShadow,
                         ),
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.iconBg,
-                              ),
-                              child: Image.file(
-                                provider.referenceImage!,
-                                width: 48,
-                                height: 48,
-                                fit: BoxFit.cover,
-                              ),
+                              borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                              child: Image.file(provider.referenceImage!, width: 48, height: 48, fit: BoxFit.cover),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
-                              child: Text(
-                                '分析基于此参考妆容',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.neutral500,
-                                ),
-                              ),
-                            ),
+                            const Expanded(child: Text('分析基于此参考妆容', style: TextStyle(fontSize: 13, color: AppColors.neutral500))),
                           ],
                         ),
                       ),
@@ -245,12 +188,7 @@ class _ActionCard extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
+  const _ActionCard({required this.icon, required this.label, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -267,14 +205,7 @@ class _ActionCard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
-            ),
+            Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
           ],
         ),
       ),

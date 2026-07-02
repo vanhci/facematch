@@ -249,13 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    provider.isAnalyzing ? '正在分析妆容...' : '正在生成仿妆...',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  const Text(
+                    'AI 正在努力分析...',
+                    style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
