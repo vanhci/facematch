@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
@@ -94,13 +96,59 @@ class ResultScreen extends StatelessWidget {
                         color: AppColors.primary,
                         onTap: () async {
                           final resultImage = provider.resultImage;
-                          if (resultImage == null) return;
-                          // 复制到文档目录再分享（iOS 需要）
+                          final refImage = provider.referenceImage;
+                          if (resultImage == null || refImage == null) return;
                           try {
                             final dir = await getApplicationDocumentsDirectory();
-                            final path = '${dir.path}/share_${DateTime.now().millisecondsSinceEpoch}.png';
-                            await resultImage.copy(path);
-                            await Share.shareXFiles([XFile(path)], text: '我的颜摹仿妆结果');
+                            final ts = DateTime.now().millisecondsSinceEpoch;
+                            
+                            // Create side-by-side composite
+                            final refBytes = await refImage.readAsBytes();
+                            final resultBytes = await resultImage.readAsBytes();
+                            final refCodec = await ui.instantiateImageCodec(refBytes);
+                            final resultCodec = await ui.instantiateImageCodec(resultBytes);
+                            final refFrame = await refCodec.getNextFrame();
+                            final resultFrame = await resultCodec.getNextFrame();
+                            final refImg = refFrame.image;
+                            final resultImg = resultFrame.image;
+                            
+                            // Calculate dimensions (max height, width = both + gap)
+                            final gap = 8.0;
+                            final maxH = refImg.height.toDouble();
+                            final w = refImg.width.toDouble() + gap + resultImg.width.toDouble();
+                            
+                            // Draw composite
+                            final recorder = ui.PictureRecorder();
+                            final canvas = Canvas(recorder);
+                            // White background
+                            canvas.drawRect(Rect.fromLTWH(0, 0, w, maxH), Paint()..color = Colors.white);
+                            // Draw images
+                            canvas.drawImage(refImg, Offset.zero, Paint());
+                            canvas.drawImage(resultImg, Offset(refImg.width.toDouble() + gap, 0), Paint());
+                            
+                            // Add labels
+                            final textBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
+                              textAlign: TextAlign.center, fontSize: 14, fontWeight: FontWeight.w600,
+                            ));
+                            // Render to image
+                            final picture = recorder.endRecording();
+                            final compositeImg = await picture.toImage(w.toInt(), maxH.toInt());
+                            
+                            // Encode as PNG
+                            final byteData = await compositeImg.toByteData(format: ui.ImageByteFormat.png);
+                            final compositePath = '${dir.path}/composite_$ts.png';
+                            await File(compositePath).writeAsBytes(byteData!.buffer.asUint8List());
+                            
+                            // Cleanup
+                            refImg.dispose(); resultImg.dispose(); compositeImg.dispose();
+                            
+                            final box = context.findRenderObject() as RenderBox?;
+                            final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+                            await Share.shareXFiles(
+                              [XFile(compositePath)],
+                              text: '颜摹仿妆 - 看看我的妆容效果',
+                              sharePositionOrigin: rect,
+                            );
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(

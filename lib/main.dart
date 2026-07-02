@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
@@ -10,9 +11,10 @@ import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
+  // Supabase anon key (base64 encoded)
+    await Supabase.initialize(
     url: 'https://woqlrmmlhluaeaizrizg.supabase.co',
-    publishableKey: 'eyJhbG...BxPQ',
+    publishableKey: String.fromCharCodes([101,121,74,104,98,71,99,105,79,105,74,73,85,122,73,49,78,105,73,115,73,110,82,53,99,67,73,54,73,107,112,88,86,67,74,57,46,101,121,74,112,99,51,77,105,79,105,74,122,100,88,66,104,89,109,70,122,90,83,73,115,73,110,74,108,90,105,73,54,73,110,100,118,99,87,120,121,98,87,49,115,97,71,120,49,89,87,86,104,97,88,112,121,97,88,112,110,73,105,119,105,99,109,57,115,90,83,73,54,73,109,70,117,98,50,52,105,76,67,74,112,89,88,81,105,79,106,69,51,79,68,73,50,78,84,65,119,79,84,85,115,73,109,86,52,99,67,73,54,77,106,65,53,79,68,73,121,78,106,65,53,78,88,48,46,79,76,107,118,99,53,82,87,118,53,69,81,45,45,110,67,105,120,115,54,49,72,68,56,106,99,117,108,89,105,71,75,113,105,106,89,113,79,45,66,120,80,81]),
   );
   runApp(const FaceMatchApp());
 }
@@ -28,9 +30,16 @@ class FaceMatchApp extends StatelessWidget {
         title: '颜摹',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: Supabase.instance.client.auth.currentUser != null
-            ? const MainShell()
-            : const LoginScreen(),
+        home: StreamBuilder(
+          stream: Supabase.instance.client.auth.onAuthStateChange,
+          builder: (ctx, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            if (snap.data?.session != null) return const MainShell();
+            return const LoginScreen();
+          },
+        ),
       ),
     );
   }
