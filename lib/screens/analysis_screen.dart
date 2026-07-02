@@ -57,10 +57,7 @@ class AnalysisScreen extends StatelessWidget {
                           children: [
                             Container(
                               width: 44, height: 44,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFE8EC),
-                                borderRadius: BorderRadius.circular(AppRadius.iconBg),
-                              ),
+                              decoration: BoxDecoration(color: const Color(0xFFFFE8EC), borderRadius: BorderRadius.circular(AppRadius.iconBg)),
                               child: const Icon(Icons.face_retouching_natural, color: AppColors.primary, size: 24),
                             ),
                             const SizedBox(width: 12),
@@ -85,8 +82,31 @@ class AnalysisScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              if (provider.error != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(provider.error!, style: const TextStyle(color: AppColors.error, fontSize: 13))),
+                        GestureDetector(
+                          onTap: () => provider.resetError(),
+                          child: const Icon(Icons.close, color: AppColors.error, size: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 24),
                 child: Row(
                   children: [
                     Expanded(
@@ -102,12 +122,12 @@ class AnalysisScreen extends StatelessWidget {
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: provider.isGenerating ? AppColors.primary300 : AppColors.primary,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: AppColors.neutral300,
-                            disabledForegroundColor: AppColors.neutral400,
-                            elevation: provider.isGenerating ? 0 : 4,
-                            shadowColor: provider.isGenerating ? Colors.transparent : AppColors.primary,
+                            disabledBackgroundColor: AppColors.primary300,
+                            disabledForegroundColor: Colors.white,
+                            elevation: 4,
+                            shadowColor: AppColors.primary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
                           ),
                           child: provider.isGenerating
@@ -129,6 +149,7 @@ class AnalysisScreen extends StatelessWidget {
                     if (provider.isGenerating) ...[
                       const SizedBox(width: 10),
                       SizedBox(
+                        width: 72,
                         height: 54,
                         child: ElevatedButton(
                           onPressed: () => provider.cancelGeneration(),
