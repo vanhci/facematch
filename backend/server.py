@@ -239,10 +239,15 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     prompt_parts.append("Lip color must be very light and natural - barely any color.")
     if makeup_desc:
         prompt_parts.append(f"Reference: {makeup_desc}")
-    prompt_parts.append("Keep everything else unchanged.")
+    if hair_desc:
+        prompt_parts.append(f"Change hairstyle to match: {hair_desc[:80]}")
+    if accessory_desc:
+        prompt_parts.append(f"Add accessories: {accessory_desc[:80]}")
+    if not hair_desc and not accessory_desc:
+        prompt_parts.append("Keep everything else unchanged.")
+    else:
+        prompt_parts.append("Keep clothing, background, and identity unchanged.")
     prompt_text = "\n".join(prompt_parts)
-
-    # Choose model based on config
     image_model = os.environ.get("IMAGE_MODEL", "dashscope")
     print(f"[transfer] Using model: {image_model}")
 
