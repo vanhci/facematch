@@ -93,6 +93,15 @@ p {{ font-size: 14px; color: #888; line-height: 1.6; margin: 0; }}
 <p>请重新注册，确认链接有效期为 1 小时。</p>
 </div></body></html>""")
 
+
+@app.get("/api/v2/config")
+async def get_config():
+    """Return client-facing Supabase config"""
+    return {
+        "supabase_url": "https://woqlrmmlhluaeaizrizg.supabase.co",
+        "supabase_anon_key": "*** ...BxPQ"
+    }
+
 # DashScope
 KEY = "sk-ws-H.RYLMMME.gTxT.MEUCIQCaj-tKLaEqh3kvvlDDKWC8nlYDfM3Ej-vi4UYJePy0EQIgJzgfIoxXYvDZedkNOIFYpAzcBBQn0AZ7tfqO4xo1xkQ"
 BASE = "https://dashscope.aliyuncs.com"
@@ -234,9 +243,11 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     except (json.JSONDecodeError, TypeError):
         makeup_desc = hair_desc = accessory_desc = ""
 
-    prompt_parts = ["Make a very subtle natural makeup change."]
-    prompt_parts.append("Do NOT add eyeliner, bold lipstick, or heavy blush.")
-    prompt_parts.append("Lip color must be very light and natural - barely any color.")
+    prompt_parts = ["Make a subtle natural makeup change."]
+    prompt_parts.append("Do NOT add heavy eyeliner or bold makeup.")
+    prompt_parts.append("Keep blush and lipstick very soft and natural - just a hint of color.")
+    prompt_parts.append("Apply makeup naturally - not too light, not too heavy.")
+    prompt_parts.append("CRITICAL: Keep the original skin color and tone EXACTLY as is. Do NOT whiten or lighten the skin.")
     if makeup_desc:
         prompt_parts.append(f"Reference: {makeup_desc}")
     if hair_desc:
