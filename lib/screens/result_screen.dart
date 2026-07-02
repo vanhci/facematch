@@ -13,58 +13,60 @@ import '../widgets/makeup_breakdown.dart';
 class ResultScreen extends StatelessWidget {
   const ResultScreen({super.key});
 
-  Future<void> _shareComposite(BuildContext context, MatchProvider provider) async {
+  Future<void> _share(BuildContext context, MatchProvider provider) async {
     final resultImage = provider.resultImage;
-    final refImage = provider.referenceImage;
-    if (resultImage == null || refImage == null) return;
+    if (resultImage == null) return;
 
     try {
       final dir = await getApplicationDocumentsDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
-
-      // Decode both images
-      final refCodec = await ui.instantiateImageCodec(await refImage.readAsBytes());
-      final resCodec = await ui.instantiateImageCodec(await resultImage.readAsBytes());
-      final refFrame = await refCodec.getNextFrame();
+      final resBytes = await resultImage.readAsBytes();
+      final resCodec = await ui.instantiateImageCodec(resBytes);
       final resFrame = await resCodec.getNextFrame();
-      final refImg = refFrame.image;
       final resImg = resFrame.image;
 
-      // Scale both to same dimensions (fit within target rect, centered)
-      const imgW = 300.0;  // fixed width per image
-      const targetH = 600.0;
-      const gap = 8.0;
-      final totalW = (imgW * 2 + gap).toInt();
-
-      // Helper to draw image centered in target rect
-      void drawImageCentered(ui.Canvas c, ui.Image img, double x) {
-        final scale = (imgW / img.width) < (targetH / img.height) 
-            ? imgW / img.width : targetH / img.height;
-        final sw = img.width * scale;
-        final sh = img.height * scale;
-        final ox = x + (imgW - sw) / 2;
-        final oy = (targetH - sh) / 2;
-        c.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
-            Rect.fromLTWH(ox, oy, sw, sh), Paint());
+      final refImage = provider.referenceImage;
+      ui.Image? refImg;
+      if (refImage != null) {
+        final refCodec = await ui.instantiateImageCodec(await refImage.readAsBytes());
+        final refFrame = await refCodec.getNextFrame();
+        refImg = refFrame.image;
       }
 
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, totalW.toDouble(), targetH));
-      canvas.drawRect(Rect.fromLTWH(0, 0, totalW.toDouble(), targetH), Paint()..color = Colors.white);
-      
-      drawImageCentered(canvas, refImg, 0);
-      drawImageCentered(canvas, resImg, imgW + gap);
+      String path;
+      if (refImg != null) {
+        const targetH = 600.0;
+        const gap = 8.0;
+        final refW = (refImg.width * targetH / refImg.height).toInt();
+        final resW = (resImg.width * targetH / resImg.height).toInt();
+        final totalW = (refW + gap + resW).toDouble();
 
-      final picture = recorder.endRecording();
-      final compositeImg = await picture.toImage(totalW, targetH.toInt());
-      final byteData = await compositeImg.toByteData(format: ui.ImageByteFormat.png);
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, totalW, targetH));
+        canvas.drawRect(Rect.fromLTWH(0, 0, totalW, targetH), Paint()..color = Colors.white);
 
-      refImg.dispose();
-      resImg.dispose();
-      compositeImg.dispose();
+        canvas.drawImageRect(refImg, Rect.fromLTWH(0, 0, refImg.width.toDouble(), refImg.height.toDouble()),
+            Rect.fromLTWH(0, 0, refW.toDouble(), targetH), Paint());
+        canvas.drawImageRect(resImg, Rect.fromLTWH(0, 0, resImg.width.toDouble(), resImg.height.toDouble()),
+            Rect.fromLTWH(refW + gap, 0, resW.toDouble(), targetH), Paint());
 
-      final path = '${dir.path}/composite_$ts.png';
-      await File(path).writeAsBytes(byteData!.buffer.asUint8List());
+        final picture = recorder.endRecording();
+        final composite = await picture.toImage(totalW.toInt(), targetH.toInt());
+        final byteData = await composite.toByteData(format: ui.ImageByteFormat.png);
+        refImg.dispose(); resImg.dispose(); composite.dispose();
+        path = '${dir.path}/share_$ts.png';
+        await File(path).writeAsBytes(byteData!.buffer.asUint8List());
+      } else {
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, resImg.width.toDouble(), resImg.height.toDouble()));
+        canvas.drawImage(resImg, Offset.zero, Paint());
+        final picture = recorder.endRecording();
+        final single = await picture.toImage(resImg.width, resImg.height);
+        final byteData = await single.toByteData(format: ui.ImageByteFormat.png);
+        resImg.dispose(); single.dispose();
+        path = '${dir.path}/share_$ts.png';
+        await File(path).writeAsBytes(byteData!.buffer.asUint8List());
+      }
 
       final box = context.findRenderObject() as RenderBox?;
       final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
@@ -112,7 +114,6 @@ class ResultScreen extends StatelessWidget {
                     Expanded(child: _ActionCard(
                       icon: Icons.save_outlined, label: '保存', color: AppColors.primary,
                       onTap: () async {
-                        final provider = context.read<MatchProvider>();
                         if (provider.resultImage != null) {
                           try {
                             await ImageGallerySaver.saveFile(provider.resultImage!.path);
@@ -134,15 +135,7 @@ class ResultScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(child: _ActionCard(
                       icon: Icons.ios_share_outlined, label: '分享', color: AppColors.primary,
-                      onTap: () => _shareComposite(context, provider),
-                    )),
-                    const SizedBox(width: 12),
-                    Expanded(child: _ActionCard(
-                      icon: Icons.refresh_outlined, label: '重新选图', color: AppColors.neutral500,
-                      onTap: () {
-                        provider.reset();
-                        Navigator.pop(context);
-                      },
+                      onTap: () => _share(context, provider),
                     )),
                   ],
                 ),
@@ -187,7 +180,6 @@ class _ActionCard extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-
   const _ActionCard({required this.icon, required this.label, required this.color, required this.onTap});
 
   @override

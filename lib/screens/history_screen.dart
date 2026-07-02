@@ -15,13 +15,7 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: Text(
-          '历史记录',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.neutral800,
-          ),
-        ),
+        title: Text('历史记录', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: AppColors.neutral800)),
         centerTitle: true,
         backgroundColor: AppColors.bgColor,
         elevation: 0,
@@ -34,32 +28,14 @@ class HistoryScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.neutral100,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: const Icon(
-                      Icons.history_outlined,
-                      size: 40,
-                      color: AppColors.neutral300,
-                    ),
+                    width: 80, height: 80,
+                    decoration: BoxDecoration(color: AppColors.neutral100, borderRadius: BorderRadius.circular(AppRadius.pill)),
+                    child: const Icon(Icons.history_outlined, size: 40, color: AppColors.neutral300),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    '还没有仿妆记录',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.neutral400,
-                    ),
-                  ),
+                  Text('还没有仿妆记录', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.neutral400)),
                   const SizedBox(height: 8),
-                  Text(
-                    '完成一次仿妆后，结果会出现在这里',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.neutral300,
-                    ),
-                  ),
+                  Text('完成一次仿妆后，结果会出现在这里', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutral300)),
                 ],
               ),
             );
@@ -83,133 +59,68 @@ class _HistoryCard extends StatelessWidget {
   final MatchResult result;
   const _HistoryCard({required this.result});
 
+  void _openResult(BuildContext context) async {
+    final provider = context.read<MatchProvider>();
+    provider.loadHistoryResult(result);
+    if (result.resultImageUrl != null && result.resultImagePath == null) {
+      try {
+        final resp = await Dio().get(result.resultImageUrl!,
+            options: Options(responseType: ResponseType.bytes));
+        final path = '${Directory.systemTemp.path}/history_${result.id}.png';
+        await File(path).writeAsBytes(resp.data as List<int>);
+        provider.setResultImage(File(path));
+      } catch (_) {}
+    }
+    if (context.mounted) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ResultScreen()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final dateStr =
-        '${result.createdAt.month}/${result.createdAt.day} ${result.createdAt.hour}:${result.createdAt.minute.toString().padLeft(2, '0')}';
+    final dateStr = '${result.createdAt.month}/${result.createdAt.day} ${result.createdAt.hour}:${result.createdAt.minute.toString().padLeft(2, '0')}';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: AppColors.cardShadow,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            // Result thumbnail
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.iconBg),
-                color: AppColors.neutral100,
+    return GestureDetector(
+      onTap: () => _openResult(context),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: AppColors.cardShadow,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 64, height: 64,
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.iconBg), color: AppColors.neutral100),
+                clipBehavior: Clip.antiAlias,
+                child: result.status == Status.completed && (result.resultImagePath != null || result.resultImageUrl != null)
+                    ? (result.resultImagePath != null
+                        ? Image.file(File(result.resultImagePath!), fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, color: AppColors.neutral300))
+                        : Image.network(result.resultImageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.image_outlined, color: AppColors.neutral300)))
+                    : result.status == Status.completed
+                    ? const Icon(Icons.image_outlined, color: AppColors.neutral300)
+                    : const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary300))),
               ),
-              clipBehavior: Clip.antiAlias,
-              child:
-                  result.status == Status.completed &&
-                      (result.resultImagePath != null ||
-                          result.resultImageUrl != null)
-                  ? (result.resultImagePath != null
-                        ? Image.file(
-                            File(result.resultImagePath!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Icon(
-                              Icons.broken_image_outlined,
-                              color: AppColors.neutral300,
-                            ),
-                          )
-                        : Image.network(
-                            result.resultImageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Icon(
-                              Icons.image_outlined,
-                              color: AppColors.neutral300,
-                            ),
-                          ))
-                  : result.status == Status.completed
-                  ? const Icon(
-                      Icons.image_outlined,
-                      color: AppColors.neutral300,
-                    )
-                  : const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.primary300,
-                        ),
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    result.status == Status.completed ? '仿妆完成' : '处理中...',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.neutral800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    dateStr,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.neutral400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (result.status == Status.completed)
-              GestureDetector(
-                onTap: () async {
-                  final provider = context.read<MatchProvider>();
-                  if (result.resultImagePath != null) {
-                    provider.loadHistoryResult(result);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ResultScreen()),
-                    );
-                  } else if (result.resultImageUrl != null) {
-                    // Download cloud image then view
-                    provider.loadHistoryResult(result);
-                    try {
-                      final resp = await Dio().get(
-                        result.resultImageUrl!,
-                        options: Options(responseType: ResponseType.bytes),
-                      );
-                      final tempDir = Directory.systemTemp;
-                      final path = '${tempDir.path}/history_${result.id}.png';
-                      await File(path).writeAsBytes(resp.data as List<int>);
-                      provider.setResultImage(File(path));
-                    } catch (_) {}
-                    if (context.mounted) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ResultScreen()),
-                      );
-                    }
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.neutral100,
-                    borderRadius: BorderRadius.circular(AppRadius.label),
-                  ),
-                  child: const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.neutral500,
-                    size: 20,
-                  ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(result.status == Status.completed ? '仿妆完成' : '处理中...',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: AppColors.neutral800)),
+                    const SizedBox(height: 4),
+                    Text(dateStr, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral400)),
+                  ],
                 ),
               ),
-          ],
+              if (result.status == Status.completed)
+                const Icon(Icons.chevron_right, color: AppColors.neutral400, size: 20),
+            ],
+          ),
         ),
       ),
     );
