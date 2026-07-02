@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../providers/match_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/comparison_slider.dart';
@@ -94,11 +95,12 @@ class ResultScreen extends StatelessWidget {
                         onTap: () async {
                           final resultImage = provider.resultImage;
                           if (resultImage == null) return;
-
+                          // 复制到文档目录再分享（iOS 需要）
                           try {
-                            await Share.shareXFiles([
-                              XFile(resultImage.path),
-                            ], text: '我的颜摹仿妆结果');
+                            final dir = await getApplicationDocumentsDirectory();
+                            final path = '${dir.path}/share_${DateTime.now().millisecondsSinceEpoch}.png';
+                            await resultImage.copy(path);
+                            await Share.shareXFiles([XFile(path)], text: '我的颜摹仿妆结果');
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
