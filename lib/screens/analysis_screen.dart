@@ -24,16 +24,15 @@ class AnalysisScreen extends StatelessWidget {
       body: Consumer<MatchProvider>(
         builder: (context, provider, _) {
           if (provider.analysis == null) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: AppColors.primary),
-                  SizedBox(height: 16),
-                  Text(
-                    '正在分析妆容...',
-                    style: TextStyle(color: AppColors.neutral500),
-                  ),
+                  Icon(Icons.face_retouching_natural_outlined, size: 64, color: AppColors.neutral300),
+                  const SizedBox(height: 16),
+                  const Text('还没有妆容分析数据', style: TextStyle(fontSize: 16, color: AppColors.neutral400)),
+                  const SizedBox(height: 8),
+                  const Text('在仿妆页上传照片进行分析', style: TextStyle(fontSize: 13, color: AppColors.neutral300)),
                 ],
               ),
             );
@@ -54,46 +53,26 @@ class AnalysisScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.75),
                           borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.6),
-                          ),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
                           boxShadow: AppColors.cardShadow,
                         ),
                         child: Row(
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: 44, height: 44,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFE8EC),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.iconBg,
-                                ),
+                                borderRadius: BorderRadius.circular(AppRadius.iconBg),
                               ),
-                              child: const Icon(
-                                Icons.face_retouching_natural,
-                                color: AppColors.primary,
-                                size: 24,
-                              ),
+                              child: const Icon(Icons.face_retouching_natural, color: AppColors.primary, size: 24),
                             ),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'AI 妆容识别',
-                                  style: textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.neutral800,
-                                  ),
-                                ),
+                                Text('AI 妆容识别', style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: AppColors.neutral800)),
                                 const SizedBox(height: 2),
-                                Text(
-                                  '点击项目可选择是否生成',
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: AppColors.neutral500,
-                                  ),
-                                ),
+                                Text('点击项目可选择是否生成', style: textTheme.bodySmall?.copyWith(color: AppColors.neutral500)),
                               ],
                             ),
                           ],
@@ -115,19 +94,11 @@ class AnalysisScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
-                    onPressed:
-                        provider.selectedCategories.isNotEmpty &&
-                            !provider.isGenerating
+                    onPressed: provider.selectedCategories.isNotEmpty && !provider.isGenerating
                         ? () async {
                             await provider.generateTransfer();
-                            if (context.mounted &&
-                                provider.resultImage != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ResultScreen(),
-                                ),
-                              );
+                            if (context.mounted && provider.resultImage != null) {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ResultScreen()));
                             }
                           }
                         : null,
@@ -138,25 +109,13 @@ class AnalysisScreen extends StatelessWidget {
                       disabledForegroundColor: AppColors.neutral400,
                       elevation: 4,
                       shadowColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
                     ),
                     child: provider.isGenerating
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                         : Text(
                             '生成仿妆 (${provider.selectedCategories.length}项)',
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                           ),
                   ),
                 ),
@@ -167,5 +126,4 @@ class AnalysisScreen extends StatelessWidget {
       ),
     );
   }
-
 }
