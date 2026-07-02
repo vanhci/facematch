@@ -5,16 +5,24 @@ import 'package:provider/provider.dart';
 import '../providers/match_provider.dart';
 import '../theme/app_theme.dart';
 import 'result_screen.dart';
+import 'analysis_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _applyHairstyle = true;
+  bool _applyAccessories = true;
 
   Future<void> _runMatch(BuildContext context, MatchProvider provider) async {
     final nav = Navigator.of(context);
-    await provider.startMatch();
-    if (provider.error == null &&
-        (provider.analysis != null || provider.resultImage != null)) {
-      nav.push(MaterialPageRoute(builder: (_) => const ResultScreen()));
+    await provider.analyzeOnly();
+    if (provider.error == null && provider.analysis != null) {
+      nav.push(MaterialPageRoute(builder: (_) => const AnalysisScreen()));
     }
   }
 
@@ -192,7 +200,24 @@ class HomeScreen extends StatelessWidget {
                                   : null,
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 10),
+                          // Toggle options
+                          Row(
+                            children: [
+                              _buildToggle(
+                                '发型',
+                                _applyHairstyle,
+                                (v) => setState(() => _applyHairstyle = v),
+                              ),
+                              const SizedBox(width: 12),
+                              _buildToggle(
+                                '配饰',
+                                _applyAccessories,
+                                (v) => setState(() => _applyAccessories = v),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
                           // Button
                           _buildMatchButton(context, provider),
                           if (provider.error != null) ...[
@@ -207,6 +232,46 @@ class HomeScreen extends StatelessWidget {
                       ),
                     );
                   },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggle(String label, bool value, ValueChanged<bool> onChanged) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+          decoration: BoxDecoration(
+            color: value
+                ? AppColors.primary100
+                : Colors.white.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(AppRadius.iconBg),
+            border: Border.all(
+              color: value ? AppColors.primary : AppColors.neutral300,
+              width: value ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                value ? Icons.check_circle : Icons.circle_outlined,
+                size: 16,
+                color: value ? AppColors.primary : AppColors.neutral400,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: value ? FontWeight.w600 : FontWeight.w400,
+                  color: value ? AppColors.primary : AppColors.neutral500,
                 ),
               ),
             ],
@@ -233,13 +298,21 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(
-                    width: 22, height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     provider.isAnalyzing ? '正在分析妆容...' : '正在生成仿妆...',
-                    style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -261,17 +334,28 @@ class HomeScreen extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: provider.canMatch ? () => _runMatch(context, provider) : null,
+        onPressed: provider.canMatch
+            ? () => _runMatch(context, provider)
+            : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: provider.canMatch ? AppColors.primary : AppColors.neutral300,
+          backgroundColor: provider.canMatch
+              ? AppColors.primary
+              : AppColors.neutral300,
           foregroundColor: Colors.white,
           disabledBackgroundColor: AppColors.neutral200,
           disabledForegroundColor: AppColors.neutral400,
           elevation: provider.canMatch ? 4 : 0,
-          shadowColor: provider.canMatch ? AppColors.primary : Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+          shadowColor: provider.canMatch
+              ? AppColors.primary
+              : Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+          ),
         ),
-        child: const Text('开始仿妆', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        child: const Text(
+          '开始仿妆',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

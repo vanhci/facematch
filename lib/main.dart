@@ -12,7 +12,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: 'https://woqlrmmlhluaeaizrizg.supabase.co',
-    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcWxybW1saGx1YWVhaXpyaXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTAwOTUsImV4cCI6MjA5ODIyNjA5NX0.OLkvc5RWv5EQ--nCixs61HD8jculYiGKqijYqO-BxPQ',
+    publishableKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcWxybW1saGx1YWVhaXpyaXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTAwOTUsImV4cCI6MjA5ODIyNjA5NX0.OLkvc5RWv5EQ--nCixs61HD8jculYiGKqijYqO-BxPQ',
   );
   runApp(const FaceMatchApp());
 }
@@ -32,7 +33,9 @@ class FaceMatchApp extends StatelessWidget {
           stream: Supabase.instance.client.auth.onAuthStateChange,
           builder: (ctx, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
             }
             if (snap.data?.session != null) return const MainShell();
             return const LoginScreen();
@@ -42,6 +45,7 @@ class FaceMatchApp extends StatelessWidget {
     );
   }
 }
+
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -61,9 +65,7 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
               color: AppColors.primary.withValues(alpha: 0.08),
@@ -73,9 +75,7 @@ class _MainShellState extends State<MainShell> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (i) => setState(() => _currentIndex = i),
@@ -86,7 +86,10 @@ class _MainShellState extends State<MainShell> {
             elevation: 0,
             selectedFontSize: 11,
             unselectedFontSize: 11,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.3),
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
             unselectedLabelStyle: const TextStyle(letterSpacing: 0.3),
             items: const [
               BottomNavigationBarItem(

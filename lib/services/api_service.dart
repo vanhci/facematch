@@ -11,7 +11,10 @@ class MakeupTransferResult {
 }
 
 abstract class MakeupApi {
-  Future<MakeupAnalysis> analyzeMakeup(File referenceImage, [String userId = '']);
+  Future<MakeupAnalysis> analyzeMakeup(
+    File referenceImage, [
+    String userId = '',
+  ]);
   Future<MakeupTransferResult> transferMakeup({
     required File targetImage,
     required String analysis,
@@ -28,17 +31,25 @@ class ApiService implements MakeupApi {
   Dio get dio => _dio;
 
   ApiService._internal()
-      : _dio = Dio(BaseOptions(
+    : _dio = Dio(
+        BaseOptions(
           baseUrl: _baseUrl,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 180),
-        ));
+        ),
+      );
 
   @override
-  Future<MakeupAnalysis> analyzeMakeup(File referenceImage, [String userId = '']) async {
+  Future<MakeupAnalysis> analyzeMakeup(
+    File referenceImage, [
+    String userId = '',
+  ]) async {
     try {
       final formData = FormData.fromMap({
-        'reference_image': await MultipartFile.fromFile(referenceImage.path, filename: 'reference.jpg'),
+        'reference_image': await MultipartFile.fromFile(
+          referenceImage.path,
+          filename: 'reference.jpg',
+        ),
         if (userId.isNotEmpty) 'user_id': userId,
       });
       final resp = await _dio.post('/api/v1/analyze', data: formData);
@@ -46,14 +57,18 @@ class ApiService implements MakeupApi {
       final analysisRaw = json['analysis'];
       final analysisStr = (analysisRaw is String)
           ? analysisRaw
-          : (analysisRaw is Map) ? jsonEncode(analysisRaw) : analysisRaw.toString();
+          : (analysisRaw is Map)
+          ? jsonEncode(analysisRaw)
+          : analysisRaw.toString();
       final jsonStart = analysisStr.indexOf('{');
       final jsonEnd = analysisStr.lastIndexOf('}') + 1;
       if (jsonStart < 0 || jsonEnd <= jsonStart) {
         throw const FormatException('AI 返回的数据格式异常，请重试');
       }
       final jsonBody = analysisStr.substring(jsonStart, jsonEnd);
-      return MakeupAnalysis.fromJson(jsonDecode(jsonBody) as Map<String, dynamic>);
+      return MakeupAnalysis.fromJson(
+        jsonDecode(jsonBody) as Map<String, dynamic>,
+      );
     } on FormatException {
       debugPrint('analyzeMakeup: AI returned malformed JSON');
       rethrow;
@@ -71,7 +86,10 @@ class ApiService implements MakeupApi {
   }) async {
     try {
       final formData = FormData.fromMap({
-        'selfie_image': await MultipartFile.fromFile(targetImage.path, filename: 'selfie.jpg'),
+        'selfie_image': await MultipartFile.fromFile(
+          targetImage.path,
+          filename: 'selfie.jpg',
+        ),
         'analysis': analysis,
         if (userId.isNotEmpty) 'user_id': userId,
       });
@@ -84,7 +102,8 @@ class ApiService implements MakeupApi {
       final base64Data = json['result_image_base64'] as String?;
       if (base64Data != null && base64Data.isNotEmpty) {
         final tempDir = Directory.systemTemp;
-        final outputPath = '${tempDir.path}/facematch_result_${DateTime.now().millisecondsSinceEpoch}.png';
+        final outputPath =
+            '${tempDir.path}/facematch_result_${DateTime.now().millisecondsSinceEpoch}.png';
         await File(outputPath).writeAsBytes(base64Decode(base64Data));
         return MakeupTransferResult(filePath: outputPath, resultUrl: resultUrl);
       }
@@ -92,10 +111,14 @@ class ApiService implements MakeupApi {
       // Fallback: download from URL
       final imgResp = await Dio().get(
         resultUrl!,
-        options: Options(responseType: ResponseType.bytes, receiveTimeout: const Duration(seconds: 30)),
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
       final tempDir = Directory.systemTemp;
-      final outputPath = '${tempDir.path}/facematch_result_${DateTime.now().millisecondsSinceEpoch}.png';
+      final outputPath =
+          '${tempDir.path}/facematch_result_${DateTime.now().millisecondsSinceEpoch}.png';
       await File(outputPath).writeAsBytes(imgResp.data as List<int>);
       return MakeupTransferResult(filePath: outputPath, resultUrl: resultUrl);
     } catch (e) {

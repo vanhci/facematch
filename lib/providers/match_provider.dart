@@ -161,7 +161,26 @@ class MatchProvider extends ChangeNotifier {
 
   // ─── Match process ───────────────────────
 
-  Future<void> startMatch() async {
+  // Selected categories for transfer (default: all)
+  Set<String> _selectedCategories = {};
+
+  Set<String> get selectedCategories => _selectedCategories;
+
+  void toggleCategory(String category) {
+    if (_selectedCategories.contains(category)) {
+      _selectedCategories.remove(category);
+    } else {
+      _selectedCategories.add(category);
+    }
+    notifyListeners();
+  }
+
+  void selectAllCategories() {
+    _selectedCategories = {'底妆', '眼妆', '眉妆', '腮红', '唇妆', '修容', '发型', '配饰'};
+    notifyListeners();
+  }
+
+  Future<void> analyzeOnly() async {
     if (!canMatch) return;
     if (remaining <= 0) {
       _error = '今日次数已用完，请明天再试或购买加油包';
@@ -187,35 +206,14 @@ class MatchProvider extends ChangeNotifier {
         return;
       }
       _isAnalyzing = false;
-      _isGenerating = true;
+      selectAllCategories();
       notifyListeners();
-
-      // Step 2: Generate makeup transfer
-      await BackgroundTask.start();
-      final transferResult = await _api.transferMakeup(
-        targetImage: _selfieImage!,
-        analysis: jsonEncode(_analysis!.toCategoryMap()),
-        userId: _userId(),
-      );
-      await BackgroundTask.end();
-      if (_isCancelled) { _finishCancelled(); return; }
-
-      _lastResultUrl = transferResult.resultUrl;
-      if (transferResult.filePath.isNotEmpty) _resultImage = File(transferResult.filePath);
-
-      _isGenerating = false;
-      _dailyUsage++;
-      notifyListeners();
-
-      // Save to Supabase history
-      _saveHistory();
     } on FormatException {
       _error = '妆容分析数据异常，请换一张参考图重试';
       _isAnalyzing = false;
       _isGenerating = false;
       notifyListeners();
     } catch (e) {
-      // Extract backend error message if available
       String errMsg = '分析失败，请重试';
       try {
         final dioErr = e as dynamic;
@@ -228,6 +226,58 @@ class MatchProvider extends ChangeNotifier {
       } catch (_) {}
       _error = _isNetworkError(e) ? '网络连接异常，请检查网络后重试' : errMsg;
       _isAnalyzing = false;
+      _isGenerating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> generateTransfer() async {
+    if (_analysis == null) return;
+    _isGenerating = true;
+    _resultImage = null;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Filter analysis by selected categories
+      final fullMap = _analysis!.toCategoryMap();
+      final filteredMap = <String, String>{};
+      for (final key in _selectedCategories) {
+        if (fullMap.containsKey(key)) {
+          filteredMap[key] = fullMap[key]!;
+        }
+      }
+
+      await BackgroundTask.start();
+      final transferResult = await _api.transferMakeup(
+        targetImage: _selfieImage!,
+        analysis: jsonEncode(filteredMap),
+        userId: _userId(),
+      );
+      await BackgroundTask.end();
+      if (_isCancelled) {
+        _finishCancelled();
+        return;
+      }
+
+      _lastResultUrl = transferResult.resultUrl;
+      if (transferResult.filePath.isNotEmpty)
+        _resultImage = File(transferResult.filePath);
+
+      _isGenerating = false;
+      _dailyUsage++;
+      notifyListeners();
+      _saveHistory();
+    } catch (e) {
+      String errMsg = '生成失败，请重试';
+      try {
+        final dioErr = e as dynamic;
+        if (dioErr.response?.data is Map) {
+          final detail = dioErr.response!.data['detail'] as String?;
+          if (detail != null && detail.isNotEmpty) errMsg = detail;
+        }
+      } catch (_) {}
+      _error = _isNetworkError(e) ? '网络连接异常，请检查网络后重试' : errMsg;
       _isGenerating = false;
       notifyListeners();
     }
@@ -256,7 +306,8 @@ class MatchProvider extends ChangeNotifier {
 
   bool _isNetworkError(Object error) {
     final message = error.toString().toLowerCase();
-    if (message.contains('dioexception') && message.contains('connection')) return true;
+    if (message.contains('dioexception') && message.contains('connection'))
+      return true;
     if (message.contains('socketexception')) return true;
     if (message.contains('connection refused')) return true;
     return false;

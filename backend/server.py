@@ -306,12 +306,12 @@ async def _transfer_minimax(original_data: bytes, prompt_text: str):
 
 
 async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
-    """Use Qwen-Image-Edit-Plus for precise makeup transfer"""
+    """Use qwen-image-2.0-pro for makeup transfer"""
     import base64
     img_b64 = base64.b64encode(original_data).decode()
     mm_url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
     payload = {
-        "model": "qwen-image-edit-max",
+        "model": "qwen-image-2.0-pro-2026-06-22",
         "input": {
             "messages": [{
                 "role": "user",

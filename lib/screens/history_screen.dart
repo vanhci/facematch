@@ -108,11 +108,27 @@ class _HistoryCard extends StatelessWidget {
                 color: AppColors.neutral100,
               ),
               clipBehavior: Clip.antiAlias,
-              child: result.status == Status.completed &&
-                      (result.resultImagePath != null || result.resultImageUrl != null)
+              child:
+                  result.status == Status.completed &&
+                      (result.resultImagePath != null ||
+                          result.resultImageUrl != null)
                   ? (result.resultImagePath != null
-                      ? Image.file(File(result.resultImagePath!), fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, color: AppColors.neutral300))
-                      : Image.network(result.resultImageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.image_outlined, color: AppColors.neutral300)))
+                        ? Image.file(
+                            File(result.resultImagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.broken_image_outlined,
+                              color: AppColors.neutral300,
+                            ),
+                          )
+                        : Image.network(
+                            result.resultImageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.image_outlined,
+                              color: AppColors.neutral300,
+                            ),
+                          ))
                   : result.status == Status.completed
                   ? const Icon(
                       Icons.image_outlined,
