@@ -93,17 +93,27 @@ class _HistoryCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              Container(
-                width: 64, height: 64,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.iconBg), color: AppColors.neutral100),
-                clipBehavior: Clip.antiAlias,
-                child: result.status == Status.completed && (result.resultImagePath != null || result.resultImageUrl != null)
-                    ? (result.resultImagePath != null
-                        ? Image.file(File(result.resultImagePath!), fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, color: AppColors.neutral300))
-                        : Image.network(result.resultImageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.image_outlined, color: AppColors.neutral300)))
-                    : result.status == Status.completed
-                    ? const Icon(Icons.image_outlined, color: AppColors.neutral300)
-                    : const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary300))),
+              // Side-by-side thumbnails: ref + result
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                child: Container(
+                  width: 72, height: 48,
+                  color: AppColors.neutral100,
+                  child: result.status == Status.completed && result.resultImagePath != null
+                      ? Row(children: [
+                          SizedBox(width: 36, height: 48, child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                            child: Image.file(File(result.referenceImagePath!), fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
+                          )),
+                          SizedBox(width: 36, height: 48, child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                            child: Image.file(File(result.resultImagePath!), fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
+                          )),
+                        ])
+                      : result.status == Status.completed && result.resultImageUrl != null
+                      ? SizedBox(width: 72, height: 48, child: Image.network(result.resultImageUrl!, fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, color: AppColors.neutral300)))
+                      : const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary300))),
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(

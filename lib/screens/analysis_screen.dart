@@ -107,64 +107,60 @@ class AnalysisScreen extends StatelessWidget {
                 ),
               Padding(
                 padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 54,
-                        child: ElevatedButton(
-                          onPressed: provider.selectedCategories.isNotEmpty && !provider.isGenerating
-                              ? () async {
-                                  await provider.generateTransfer();
-                                  if (context.mounted && provider.resultImage != null) {
-                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ResultScreen()));
-                                  }
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: AppColors.primary300,
-                            disabledForegroundColor: Colors.white,
-                            elevation: 4,
-                            shadowColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
-                          ),
-                          child: provider.isGenerating
-                              ? const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)),
-                                    SizedBox(width: 10),
-                                    Text('生成中...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                                  ],
-                                )
-                              : Text(
-                                  '生成仿妆 (${provider.selectedCategories.length}项)',
-                                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                                ),
-                        ),
-                      ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      gradient: AppColors.gradientRose,
                     ),
-                    if (provider.isGenerating) ...[
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        width: 72,
-                        height: 54,
-                        child: ElevatedButton(
-                          onPressed: () => provider.cancelGeneration(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppColors.neutral600,
-                            elevation: 0,
-                            side: BorderSide(color: AppColors.neutral300),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+                    child: provider.isGenerating
+                        ? Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)),
+                                  SizedBox(width: 12),
+                                  Text('AI 努力生成中...', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              Positioned(
+                                right: 8,
+                                child: TextButton(
+                                  onPressed: () => provider.cancelGeneration(),
+                                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                                  child: const Text('取消'),
+                                ),
+                              ),
+                            ],
+                          )
+                        : ElevatedButton(
+                            onPressed: provider.selectedCategories.isNotEmpty
+                                ? () async {
+                                    await provider.generateTransfer();
+                                    if (context.mounted && provider.resultImage != null) {
+                                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ResultScreen()));
+                                    }
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.transparent,
+                              disabledForegroundColor: Colors.white54,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+                            ),
+                            child: Text(
+                              '生成仿妆 (${provider.selectedCategories.length}项)',
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                            ),
                           ),
-                          child: const Text('取消', style: TextStyle(fontSize: 15)),
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ],

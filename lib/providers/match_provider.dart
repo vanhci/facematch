@@ -268,8 +268,9 @@ class MatchProvider extends ChangeNotifier {
       }
 
       _lastResultUrl = transferResult.resultUrl;
-      if (transferResult.filePath.isNotEmpty)
+      if (transferResult.filePath.isNotEmpty) {
         _resultImage = File(transferResult.filePath);
+      }
 
       _isGenerating = false;
       _dailyUsage++;
@@ -298,7 +299,7 @@ class MatchProvider extends ChangeNotifier {
         '/api/v2/history',
         data: {
           'user_id': uid,
-          'reference_image_url': '',
+          'reference_image_url': _referenceImage?.path ?? '',
           'selfie_image_url': '',
           'result_image_url': _lastResultUrl ?? '',
           'analysis': _analysis?.toCategoryMap(),
@@ -313,8 +314,9 @@ class MatchProvider extends ChangeNotifier {
 
   bool _isNetworkError(Object error) {
     final message = error.toString().toLowerCase();
-    if (message.contains('dioexception') && message.contains('connection'))
+    if (message.contains('dioexception') && message.contains('connection')) {
       return true;
+    }
     if (message.contains('socketexception')) return true;
     if (message.contains('connection refused')) return true;
     return false;

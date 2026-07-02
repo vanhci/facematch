@@ -245,7 +245,7 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
 
     prompt_parts = ["Apply a natural everyday makeup look."]
     prompt_parts.append("Use the reference colors to guide the look naturally.")
-    prompt_parts.append("Avoid heavy or dramatic makeup. Keep it subtle and wearable.")
+    prompt_parts.append("Keep eyebrows natural - not overdrawn. Lips should be a subtle tint, not full color.")
     prompt_parts.append("CRITICAL: Keep the original skin color and tone EXACTLY as is. Do NOT whiten, yellow, or lighten the skin.")
     if makeup_desc:
         prompt_parts.append(f"Reference: {makeup_desc}")

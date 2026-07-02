@@ -103,9 +103,9 @@ class ResultScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ComparisonSlider(
-                  beforeImage: provider.selfieImage,
+                  beforeImage: provider.selfieImage ?? provider.referenceImage,
                   afterImage: provider.resultImage,
-                  beforeLabel: '原图',
+                  beforeLabel: provider.selfieImage != null ? '原图' : '参考妆',
                   afterLabel: '仿妆',
                 ),
                 const SizedBox(height: 24),
