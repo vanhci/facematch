@@ -163,6 +163,12 @@ class MatchProvider extends ChangeNotifier {
 
   // Selected categories for transfer (default: all)
   Set<String> _selectedCategories = {};
+  int? _pendingTabSwitch;
+
+  int? get pendingTabSwitch => _pendingTabSwitch;
+  void clearPendingTabSwitch() {
+    _pendingTabSwitch = null;
+  }
 
   Set<String> get selectedCategories => _selectedCategories;
 
@@ -207,6 +213,7 @@ class MatchProvider extends ChangeNotifier {
       }
       _isAnalyzing = false;
       selectAllCategories();
+      _pendingTabSwitch = 1;
       notifyListeners();
     } on FormatException {
       _error = '妆容分析数据异常，请换一张参考图重试';

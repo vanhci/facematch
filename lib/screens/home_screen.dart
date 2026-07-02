@@ -15,10 +15,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<void> _runMatch(BuildContext context, MatchProvider provider) async {
-    final nav = Navigator.of(context);
     await provider.analyzeOnly();
-    if (provider.error == null && provider.analysis != null) {
-      nav.push(MaterialPageRoute(builder: (_) => const AnalysisScreen()));
+    if (provider.error != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.error!),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

@@ -12,8 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: 'https://woqlrmmlhluaeaizrizg.supabase.co',
-    publishableKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcWxybW1saGx1YWVhaXpyaXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTAwOTUsImV4cCI6MjA5ODIyNjA5NX0.OLkvc5RWv5EQ--nCixs61HD8jculYiGKqijYqO-BxPQ',
+    publishableKey: 'eyJhbG...BxPQ',
   );
   runApp(const FaceMatchApp());
 }
@@ -29,18 +28,9 @@ class FaceMatchApp extends StatelessWidget {
         title: '颜摹',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: StreamBuilder(
-          stream: Supabase.instance.client.auth.onAuthStateChange,
-          builder: (ctx, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (snap.data?.session != null) return const MainShell();
-            return const LoginScreen();
-          },
-        ),
+        home: Supabase.instance.client.auth.currentUser != null
+            ? const MainShell()
+            : const LoginScreen(),
       ),
     );
   }
@@ -59,6 +49,19 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for pending tab switches from MatchProvider
+    final provider = context.watch<MatchProvider>();
+    if (provider.pendingTabSwitch != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _currentIndex = provider.pendingTabSwitch!;
+            provider.clearPendingTabSwitch();
+          });
+        }
+      });
+    }
+
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       body: _pages[_currentIndex],
