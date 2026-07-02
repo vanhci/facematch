@@ -100,21 +100,10 @@ class AnalysisScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ...provider.analysis!.toCategoryMap().keys.map(
-                        (cat) => _buildCategoryItem(provider, cat),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '妆容详情',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.neutral700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
                       MakeupBreakdown(
                         analysis: provider.analysis!.toCategoryMap(),
+                        selectedCategories: provider.selectedCategories,
+                        onToggle: (cat) => provider.toggleCategory(cat),
                       ),
                     ],
                   ),

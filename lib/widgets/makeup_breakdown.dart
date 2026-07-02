@@ -4,8 +4,15 @@ import '../theme/app_theme.dart';
 
 class MakeupBreakdown extends StatelessWidget {
   final Map<String, String> analysis;
+  final Set<String>? selectedCategories;
+  final void Function(String)? onToggle;
 
-  const MakeupBreakdown({super.key, required this.analysis});
+  const MakeupBreakdown({
+    super.key,
+    required this.analysis,
+    this.selectedCategories,
+    this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +32,12 @@ class MakeupBreakdown extends StatelessWidget {
         ...categories.map(
           (entry) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _CategoryCard(title: entry.key, description: entry.value),
+            child: _CategoryCard(
+              title: entry.key,
+              description: entry.value,
+              selected: selectedCategories?.contains(entry.key) ?? true,
+              onToggle: onToggle != null ? () => onToggle!(entry.key) : null,
+            ),
           ),
         ),
       ],
@@ -36,8 +48,15 @@ class MakeupBreakdown extends StatelessWidget {
 class _CategoryCard extends StatefulWidget {
   final String title;
   final String description;
+  final bool selected;
+  final VoidCallback? onToggle;
 
-  const _CategoryCard({required this.title, required this.description});
+  const _CategoryCard({
+    required this.title,
+    required this.description,
+    this.selected = true,
+    this.onToggle,
+  });
 
   @override
   State<_CategoryCard> createState() => _CategoryCardState();
@@ -189,6 +208,30 @@ class _CategoryCardState extends State<_CategoryCard>
                       ),
                     ),
                   ),
+                  if (widget.onToggle != null)
+                    GestureDetector(
+                      onTap: widget.onToggle,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        margin: const EdgeInsets.only(right: 4),
+                        decoration: BoxDecoration(
+                          color: widget.selected
+                              ? AppColors.primary.withValues(alpha: 0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Icon(
+                          widget.selected
+                              ? Icons.check_circle
+                              : Icons.circle_outlined,
+                          size: 20,
+                          color: widget.selected
+                              ? AppColors.primary
+                              : AppColors.neutral400,
+                        ),
+                      ),
+                    ),
                   Container(
                     width: 28,
                     height: 28,
