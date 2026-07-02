@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart' as dio;
 import '../models/makeup_analysis.dart';
 import '../services/api_service.dart';
 import '../services/background_task.dart';
@@ -105,10 +106,11 @@ class MatchProvider extends ChangeNotifier {
               createdAt:
                   DateTime.tryParse(j['created_at'] as String? ?? '') ??
                   DateTime.now(),
-              referenceImagePath: null, // images stored in cloud in future
+              referenceImagePath: null,
               selfieImagePath: null,
               resultImagePath: null,
               resultImageUrl: j['result_image_url'] as String?,
+              referenceImageUrl: j['reference_image_url'] as String?,
               analysis: analysis,
               status: Status.completed,
             );
@@ -293,16 +295,31 @@ class MatchProvider extends ChangeNotifier {
 
   Future<void> _saveHistory() async {
     final uid = userId;
-    if (uid == null) return;
+    if (uid == null || _analysis == null) return;
     try {
+      String? refUrl;
+
+      // Upload reference image to backend
+      if (_referenceImage != null) {
+        final formData = dio.FormData.fromMap({
+          'file': await dio.MultipartFile.fromFile(
+            _referenceImage!.path,
+            filename: 'reference.jpg',
+          ),
+        });
+        final uploadResp = await ApiService().dio.post('/api/v2/upload', data: formData);
+        final uploadData = uploadResp.data as Map<String, dynamic>;
+        refUrl = uploadData['url'] as String?;
+      }
+
       await ApiService().dio.post(
         '/api/v2/history',
         data: {
           'user_id': uid,
-          'reference_image_url': _referenceImage?.path ?? '',
+          'reference_image_url': refUrl ?? '',
           'selfie_image_url': '',
           'result_image_url': _lastResultUrl ?? '',
-          'analysis': _analysis?.toCategoryMap(),
+          'analysis': _analysis!.toCategoryMap(),
         },
       );
     } catch (e) {
@@ -360,6 +377,11 @@ class MatchProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setReferenceImage(File file) {
+    _referenceImage = file;
+    notifyListeners();
+  }
+
   void loadHistoryResult(MatchResult result) {
     _resultImage = result.resultImagePath != null
         ? File(result.resultImagePath!)
@@ -371,6 +393,7 @@ class MatchProvider extends ChangeNotifier {
     _selfieImage = result.selfieImagePath != null
         ? File(result.selfieImagePath!)
         : null;
+    _lastResultUrl = result.resultImageUrl;
     _isAnalyzing = false;
     _isGenerating = false;
     _error = null;

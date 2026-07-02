@@ -73,6 +73,7 @@ class MatchResult {
   final String? selfieImagePath;
   final String? resultImagePath;
   final String? resultImageUrl;
+  final String? referenceImageUrl;
   final MakeupAnalysis? analysis;
   final Status status;
 
@@ -83,6 +84,7 @@ class MatchResult {
     this.selfieImagePath,
     this.resultImagePath,
     this.resultImageUrl,
+    this.referenceImageUrl,
     this.analysis,
     this.status = Status.processing,
   });
@@ -95,6 +97,7 @@ class MatchResult {
       selfieImagePath: json['selfie_image'] as String?,
       resultImagePath: json['result_image'] as String?,
       resultImageUrl: json['result_image_url'] as String?,
+      referenceImageUrl: json['reference_image_url'] as String?,
       analysis: json['analysis'] != null
           ? MakeupAnalysis.fromJson(json['analysis'] as Map<String, dynamic>)
           : null,
@@ -113,6 +116,7 @@ class MatchResult {
       'selfie_image': selfieImagePath,
       'result_image': resultImagePath,
       'result_image_url': resultImageUrl,
+      'reference_image_url': referenceImageUrl,
       'analysis': analysis?.toJson(),
       'status': status.name,
     };

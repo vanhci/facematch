@@ -1,9 +1,14 @@
-import os, base64, json, uuid, datetime
+import os, base64, json, uuid, datetime, shutil
 from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 import requests
+
+# Upload directory for persisted images
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Load .env file if exists
 env_path = Path(__file__).parent.parent / ".env"
@@ -15,6 +20,9 @@ if env_path.exists():
 
 app = FastAPI(title="FaceMatch API", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# Serve uploaded images
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Serve static HTML for auth confirmation
 from fastapi.responses import HTMLResponse
@@ -247,6 +255,9 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     prompt_parts.append("Use the reference colors to guide the look naturally.")
     prompt_parts.append("Keep eyebrows natural - not overdrawn. Lips should be a subtle tint, not full color.")
     prompt_parts.append("CRITICAL: Keep the original skin color and tone EXACTLY as is. Do NOT whiten, yellow, or lighten the skin.")
+    # Identity preservation - must come early and be very explicit
+    prompt_parts.append("CRITICAL: Do NOT change the person's facial structure — eyes, nose, mouth shape, jawline, face shape, and facial proportions must remain EXACTLY identical.")
+    prompt_parts.append("Do NOT alter the person's age, expression, or head pose. Only the makeup style should change.")
     if makeup_desc:
         prompt_parts.append(f"Reference: {makeup_desc}")
     if hair_desc:
@@ -254,9 +265,9 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     if accessory_desc:
         prompt_parts.append(f"Add accessories: {accessory_desc[:80]}")
     if not hair_desc and not accessory_desc:
-        prompt_parts.append("Keep everything else unchanged.")
+        prompt_parts.append("Keep clothing, background, identity, and ALL facial features completely unchanged.")
     else:
-        prompt_parts.append("Keep clothing, background, and identity unchanged.")
+        prompt_parts.append("Keep clothing, background, and ALL facial features completely unchanged.")
     prompt_text = "\n".join(prompt_parts)
     image_model = os.environ.get("IMAGE_MODEL", "dashscope")
     print(f"[transfer] Using model: {image_model}")
@@ -444,6 +455,17 @@ async def delete_history(record_id: str, user_id: str = Form(...)):
     r = requests.delete(f"{url}?id=eq.{record_id}&user_id=eq.{user_id}",
                         headers=supabase_headers(), timeout=10)
     return {"deleted": r.status_code in (200, 204)}
+
+
+@app.post("/api/v2/upload")
+async def upload_image(file: UploadFile = File(...)):
+    """Upload an image and return its accessible URL"""
+    ext = Path(file.filename or "image.jpg").suffix or ".jpg"
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = UPLOAD_DIR / filename
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return {"url": f"/uploads/{filename}"}
 
 
 # ─── 内部 ───────────────────────────────

@@ -142,28 +142,7 @@ class ResultScreen extends StatelessWidget {
                 const SizedBox(height: 32),
                 if (provider.analysis != null) ...[
                   if (provider.referenceImage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
-                          boxShadow: AppColors.cardShadow,
-                        ),
-                        child: Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(AppRadius.iconBg),
-                              child: Image.file(provider.referenceImage!, width: 48, height: 48, fit: BoxFit.cover),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(child: Text('分析基于此参考妆容', style: TextStyle(fontSize: 13, color: AppColors.neutral500))),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _ReferenceCard(referenceImage: provider.referenceImage!),
                   MakeupBreakdown(analysis: provider.analysis!.toCategoryMap()),
                 ],
               ],
@@ -199,6 +178,84 @@ class _ActionCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReferenceCard extends StatelessWidget {
+  final File referenceImage;
+  const _ReferenceCard({required this.referenceImage});
+
+  void _showFullImage(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.92),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.file(referenceImage, fit: BoxFit.contain),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GestureDetector(
+        onTap: () => _showFullImage(context),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+            boxShadow: AppColors.cardShadow,
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                child: Image.file(referenceImage, width: 48, height: 48, fit: BoxFit.cover),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text('分析基于此参考妆容', style: TextStyle(fontSize: 13, color: AppColors.neutral500)),
+              ),
+              Icon(Icons.zoom_in_rounded, size: 18, color: AppColors.neutral300),
+            ],
+          ),
         ),
       ),
     );

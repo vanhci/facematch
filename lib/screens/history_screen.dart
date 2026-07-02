@@ -62,15 +62,27 @@ class _HistoryCard extends StatelessWidget {
   void _openResult(BuildContext context) async {
     final provider = context.read<MatchProvider>();
     provider.loadHistoryResult(result);
-    if (result.resultImageUrl != null && result.resultImagePath == null) {
-      try {
+    final baseUrl = 'https://facematch.vanhci.top';
+    try {
+      // Download result image
+      if (result.resultImageUrl != null && result.resultImagePath == null) {
         final resp = await Dio().get(result.resultImageUrl!,
             options: Options(responseType: ResponseType.bytes));
-        final path = '${Directory.systemTemp.path}/history_${result.id}.png';
+        final path = '${Directory.systemTemp.path}/history_result_${result.id}.png';
         await File(path).writeAsBytes(resp.data as List<int>);
         provider.setResultImage(File(path));
-      } catch (_) {}
-    }
+      }
+      // Download reference image for result screen display
+      if (result.referenceImageUrl != null && result.referenceImageUrl!.isNotEmpty
+          && provider.referenceImage == null) {
+        final refUrl = '$baseUrl${result.referenceImageUrl}';
+        final resp = await Dio().get(refUrl,
+            options: Options(responseType: ResponseType.bytes));
+        final path = '${Directory.systemTemp.path}/history_ref_${result.id}.jpg';
+        await File(path).writeAsBytes(resp.data as List<int>);
+        provider.setReferenceImage(File(path));
+      }
+    } catch (_) {}
     if (context.mounted) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ResultScreen()));
     }
@@ -79,6 +91,7 @@ class _HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateStr = '${result.createdAt.month}/${result.createdAt.day} ${result.createdAt.hour}:${result.createdAt.minute.toString().padLeft(2, '0')}';
+    final baseUrl = 'https://facematch.vanhci.top';
 
     return GestureDetector(
       onTap: () => _openResult(context),
@@ -99,20 +112,22 @@ class _HistoryCard extends StatelessWidget {
                 child: Container(
                   width: 72, height: 48,
                   color: AppColors.neutral100,
-                  child: result.status == Status.completed && result.resultImagePath != null
-                      ? Row(children: [
-                          SizedBox(width: 36, height: 48, child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.iconBg),
-                            child: Image.file(File(result.referenceImagePath!), fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
-                          )),
-                          SizedBox(width: 36, height: 48, child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.iconBg),
-                            child: Image.file(File(result.resultImagePath!), fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
-                          )),
-                        ])
-                      : result.status == Status.completed && result.resultImageUrl != null
-                      ? SizedBox(width: 72, height: 48, child: Image.network(result.resultImageUrl!, fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, color: AppColors.neutral300)))
-                      : const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary300))),
+                  child: Row(children: [
+                    // Reference image
+                    SizedBox(width: 36, height: 48, child: _thumbnail(
+                      localPath: result.referenceImagePath,
+                      url: result.referenceImageUrl != null && result.referenceImageUrl!.isNotEmpty
+                          ? '$baseUrl${result.referenceImageUrl}'
+                          : null,
+                    )),
+                    // Divider line
+                    Container(width: 1, color: AppColors.neutral200),
+                    // Result image
+                    SizedBox(width: 35, height: 48, child: _thumbnail(
+                      localPath: result.resultImagePath,
+                      url: result.resultImageUrl,
+                    )),
+                  ]),
                 ),
               ),
               const SizedBox(width: 14),
@@ -134,5 +149,23 @@ class _HistoryCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _thumbnail({String? localPath, String? url}) {
+    if (localPath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.iconBg),
+        child: Image.file(File(localPath), fit: BoxFit.cover,
+          errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
+      );
+    }
+    if (url != null && url.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.iconBg),
+        child: Image.network(url, fit: BoxFit.cover,
+          errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
+      );
+    }
+    return const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300);
   }
 }
