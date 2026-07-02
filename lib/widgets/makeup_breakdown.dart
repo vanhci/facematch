@@ -157,20 +157,12 @@ class _CategoryCardState extends State<_CategoryCard>
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
-                  Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: _iconBg(widget.title),
-                      borderRadius: BorderRadius.circular(AppRadius.iconBg),
-                    ),
-                    child: Icon(_icon(widget.title), size: 20, color: AppColors.warmBrown),
-                  ),
                   if (widget.onToggle != null)
                     GestureDetector(
                       onTap: widget.onToggle,
                       child: Container(
                         width: 28, height: 28,
-                        margin: const EdgeInsets.only(left: 8),
+                        margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
                           color: widget.selected ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -182,6 +174,14 @@ class _CategoryCardState extends State<_CategoryCard>
                         ),
                       ),
                     ),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: _iconBg(widget.title),
+                      borderRadius: BorderRadius.circular(AppRadius.iconBg),
+                    ),
+                    child: Icon(_icon(widget.title), size: 20, color: AppColors.warmBrown),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
