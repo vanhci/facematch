@@ -243,10 +243,9 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     except (json.JSONDecodeError, TypeError):
         makeup_desc = hair_desc = accessory_desc = ""
 
-    prompt_parts = ["Make a subtle natural makeup change."]
-    prompt_parts.append("Do NOT add heavy eyeliner or bold makeup.")
-    prompt_parts.append("Keep blush and lipstick very soft and natural - just a hint of color.")
-    prompt_parts.append("Apply makeup naturally - not too light, not too heavy.")
+    prompt_parts = ["Apply a very light, barely-there makeup."]
+    prompt_parts.append("IMPORTANT: Makeup intensity should be minimal.")
+    prompt_parts.append("Blush: just a trace. Lipstick: very light, close to natural lip color.")
     prompt_parts.append("CRITICAL: Keep the original skin color and tone EXACTLY as is. Do NOT whiten or lighten the skin.")
     if makeup_desc:
         prompt_parts.append(f"Reference: {makeup_desc}")

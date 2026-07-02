@@ -112,19 +112,25 @@ class ResultScreen extends StatelessWidget {
                             final refImg = refFrame.image;
                             final resultImg = resultFrame.image;
                             
-                            // Calculate dimensions (max height, width = both + gap)
+                            // Calculate dimensions - use max height and fit both
                             final gap = 8.0;
-                            final maxH = refImg.height.toDouble();
-                            final w = refImg.width.toDouble() + gap + resultImg.width.toDouble();
+                            final maxH = refImg.height.toDouble() > resultImg.height.toDouble()
+                                ? refImg.height.toDouble() : resultImg.height.toDouble();
+                            final refW = refImg.width.toDouble();
+                            final resW = resultImg.width.toDouble();
+                            final totalW = refW + gap + resW;
                             
                             // Draw composite
                             final recorder = ui.PictureRecorder();
                             final canvas = Canvas(recorder);
                             // White background
-                            canvas.drawRect(Rect.fromLTWH(0, 0, w, maxH), Paint()..color = Colors.white);
-                            // Draw images
-                            canvas.drawImage(refImg, Offset.zero, Paint());
-                            canvas.drawImage(resultImg, Offset(refImg.width.toDouble() + gap, 0), Paint());
+                            canvas.drawRect(Rect.fromLTWH(0, 0, totalW, maxH), Paint()..color = Colors.white);
+                            // Draw reference image centered vertically
+                            final refY = (maxH - refImg.height) / 2;
+                            canvas.drawImage(refImg, Offset(0, refY), Paint());
+                            // Draw result image centered vertically
+                            final resY = (maxH - resultImg.height) / 2;
+                            canvas.drawImage(resultImg, Offset(refW + gap, resY), Paint());
                             
                             // Add labels
                             final textBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
@@ -132,7 +138,7 @@ class ResultScreen extends StatelessWidget {
                             ));
                             // Render to image
                             final picture = recorder.endRecording();
-                            final compositeImg = await picture.toImage(w.toInt(), maxH.toInt());
+                            final compositeImg = await picture.toImage(totalW.toInt(), maxH.toInt());
                             
                             // Encode as PNG
                             final byteData = await compositeImg.toByteData(format: ui.ImageByteFormat.png);
