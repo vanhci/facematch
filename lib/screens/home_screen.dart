@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/match_provider.dart';
 import '../theme/app_theme.dart';
-import 'result_screen.dart';
 import 'analysis_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,9 +14,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _applyHairstyle = true;
-  bool _applyAccessories = true;
-
   Future<void> _runMatch(BuildContext context, MatchProvider provider) async {
     final nav = Navigator.of(context);
     await provider.analyzeOnly();
@@ -201,23 +197,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          // Toggle options
-                          Row(
-                            children: [
-                              _buildToggle(
-                                '发型',
-                                _applyHairstyle,
-                                (v) => setState(() => _applyHairstyle = v),
-                              ),
-                              const SizedBox(width: 12),
-                              _buildToggle(
-                                '配饰',
-                                _applyAccessories,
-                                (v) => setState(() => _applyAccessories = v),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
                           // Button
                           _buildMatchButton(context, provider),
                           if (provider.error != null) ...[
@@ -232,46 +211,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggle(String label, bool value, ValueChanged<bool> onChanged) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onChanged(!value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-          decoration: BoxDecoration(
-            color: value
-                ? AppColors.primary100
-                : Colors.white.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(AppRadius.iconBg),
-            border: Border.all(
-              color: value ? AppColors.primary : AppColors.neutral300,
-              width: value ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                value ? Icons.check_circle : Icons.circle_outlined,
-                size: 16,
-                color: value ? AppColors.primary : AppColors.neutral400,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: value ? FontWeight.w600 : FontWeight.w400,
-                  color: value ? AppColors.primary : AppColors.neutral500,
                 ),
               ),
             ],
@@ -353,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: const Text(
-          '开始仿妆',
+          '妆容分析',
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
       ),
