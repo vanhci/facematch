@@ -159,7 +159,7 @@ async def login(phone: str = Form(...), nickname: str = Form(default="")):
     user_id = str(uuid.uuid4())
     today = datetime.date.today().isoformat()
     payload = {"id": user_id, "phone": phone, "nickname": nickname or f"用户{phone[-4:]}",
-               "created_at": datetime.datetime.utcnow().isoformat(),
+               "created_at": datetime.datetime.now(datetime.UTC).isoformat(),
                "last_login": datetime.datetime.utcnow().isoformat(),
                "tier": "free", "daily_usage": 0, "daily_usage_date": today}
     r = requests.post(url, headers=h, json=payload, timeout=10)
@@ -255,6 +255,8 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     prompt_parts.append("Use the reference colors to guide the look naturally.")
     prompt_parts.append("Keep eyebrows natural - not overdrawn. Lips should be a subtle tint, not full color.")
     prompt_parts.append("CRITICAL: Keep the original skin color and tone EXACTLY as is. Do NOT whiten, yellow, or lighten the skin.")
+    prompt_parts.append("CRITICAL COLOR: The entire image must NOT have a yellowish or warm color cast. Maintain NEUTRAL/COOL color temperature.")
+    prompt_parts.append("Makeup colors must be pure and cool-toned. Absolutely NO warm/yellow/olive tint on skin, no orange tone on lips.")
     # Identity preservation - must come early and be very explicit
     prompt_parts.append("CRITICAL: Do NOT change the person's facial structure — eyes, nose, mouth shape, jawline, face shape, and facial proportions must remain EXACTLY identical.")
     prompt_parts.append("Do NOT alter the person's age, expression, or head pose. Only the makeup style should change.")
@@ -440,7 +442,7 @@ async def save_history(data: dict):
         "result_image_url": data.get("result_image_url", ""),
         "analysis": json.dumps(data.get("analysis", {}), ensure_ascii=False),
         "status": "completed",
-        "created_at": datetime.datetime.utcnow().isoformat()
+        "created_at": datetime.datetime.now(datetime.UTC).isoformat()
     }
     r = requests.post(url, headers=h, json=record, timeout=10)
     print(f"[save_history] Supabase response: {r.status_code} {r.text[:200]}")

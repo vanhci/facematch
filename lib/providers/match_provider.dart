@@ -48,7 +48,9 @@ class MatchProvider extends ChangeNotifier {
   int _dailyLimit = 3;
   int _bonusCredits = 0;
 
-  // Last result URL for history
+  // History loading
+  bool _isHistoryLoading = false;
+  bool get isHistoryLoading => _isHistoryLoading;
   String? _lastResultUrl;
 
   // Getters
@@ -103,9 +105,12 @@ class MatchProvider extends ChangeNotifier {
                 : null;
             return MatchResult(
               id: j['id'] as String? ?? '',
-              createdAt:
-                  DateTime.tryParse(j['created_at'] as String? ?? '') ??
-                  DateTime.now(),
+              createdAt: () {
+                final raw = j['created_at'] as String? ?? '';
+                if (raw.isEmpty) return DateTime.now();
+                if (!raw.endsWith('Z')) return DateTime.parse('${raw}Z').toLocal();
+                return DateTime.parse(raw).toLocal();
+              }(),
               referenceImagePath: null,
               selfieImagePath: null,
               resultImagePath: null,
@@ -277,7 +282,13 @@ class MatchProvider extends ChangeNotifier {
       _isGenerating = false;
       _dailyUsage++;
       notifyListeners();
-      _saveHistory();
+      // Save & refresh history (best effort)
+      try {
+        await _saveHistory();
+        await _loadHistory();
+      } catch (e) {
+        debugPrint('save/refresh history error: $e');
+      }
     } catch (e) {
       String errMsg = '生成失败，请重试';
       try {
@@ -383,6 +394,7 @@ class MatchProvider extends ChangeNotifier {
   }
 
   void loadHistoryResult(MatchResult result) {
+    _isHistoryLoading = true;
     _resultImage = result.resultImagePath != null
         ? File(result.resultImagePath!)
         : null;
@@ -397,6 +409,11 @@ class MatchProvider extends ChangeNotifier {
     _isAnalyzing = false;
     _isGenerating = false;
     _error = null;
+    notifyListeners();
+  }
+
+  void clearHistoryLoading() {
+    _isHistoryLoading = false;
     notifyListeners();
   }
 

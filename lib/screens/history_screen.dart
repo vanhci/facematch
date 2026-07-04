@@ -63,8 +63,17 @@ class _HistoryCard extends StatelessWidget {
     final provider = context.read<MatchProvider>();
     provider.loadHistoryResult(result);
     final baseUrl = 'https://facematch.vanhci.top';
+
+    // Download images in background after navigation
+    _downloadImages(context, provider, baseUrl);
+
+    if (context.mounted) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ResultScreen()));
+    }
+  }
+
+  Future<void> _downloadImages(BuildContext context, MatchProvider provider, String baseUrl) async {
     try {
-      // Download result image
       if (result.resultImageUrl != null && result.resultImagePath == null) {
         final resp = await Dio().get(result.resultImageUrl!,
             options: Options(responseType: ResponseType.bytes));
@@ -72,7 +81,6 @@ class _HistoryCard extends StatelessWidget {
         await File(path).writeAsBytes(resp.data as List<int>);
         provider.setResultImage(File(path));
       }
-      // Download reference image for result screen display
       if (result.referenceImageUrl != null && result.referenceImageUrl!.isNotEmpty
           && provider.referenceImage == null) {
         final refUrl = '$baseUrl${result.referenceImageUrl}';
@@ -83,14 +91,12 @@ class _HistoryCard extends StatelessWidget {
         provider.setReferenceImage(File(path));
       }
     } catch (_) {}
-    if (context.mounted) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ResultScreen()));
-    }
+    provider.clearHistoryLoading();
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = '${result.createdAt.month}/${result.createdAt.day} ${result.createdAt.hour}:${result.createdAt.minute.toString().padLeft(2, '0')}';
+    final dateStr = '${result.createdAt.month}/${result.createdAt.day} ${result.createdAt.hour.toString().padLeft(2, '0')}:${result.createdAt.minute.toString().padLeft(2, '0')}';
     final baseUrl = 'https://facematch.vanhci.top';
 
     return GestureDetector(

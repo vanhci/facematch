@@ -102,11 +102,27 @@ class ResultScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ComparisonSlider(
-                  beforeImage: provider.selfieImage ?? provider.referenceImage,
-                  afterImage: provider.resultImage,
-                  beforeLabel: provider.selfieImage != null ? '原图' : '参考妆',
-                  afterLabel: '仿妆',
+                Stack(
+                  children: [
+                    ComparisonSlider(
+                      beforeImage: provider.selfieImage ?? provider.referenceImage,
+                      afterImage: provider.resultImage,
+                      beforeLabel: provider.selfieImage != null ? '原图' : '参考妆',
+                      afterLabel: '仿妆',
+                    ),
+                    if (provider.isHistoryLoading)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black26,
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Row(

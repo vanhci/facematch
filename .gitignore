@@ -44,5 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 backend/.venv/
+backend/uploads/
 .env
 supabase/.temp/

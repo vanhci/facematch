@@ -90,9 +90,13 @@ class MatchResult {
   });
 
   factory MatchResult.fromJson(Map<String, dynamic> json) {
+    String raw = json['created_at'] as String;
+    if (!raw.endsWith('Z')) {
+      raw = '${raw}Z';
+    }
     return MatchResult(
       id: json['id'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(raw).toLocal(),
       referenceImagePath: json['reference_image'] as String?,
       selfieImagePath: json['selfie_image'] as String?,
       resultImagePath: json['result_image'] as String?,
