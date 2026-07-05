@@ -159,7 +159,7 @@ async def login(phone: str = Form(...), nickname: str = Form(default="")):
     user_id = str(uuid.uuid4())
     today = datetime.date.today().isoformat()
     payload = {"id": user_id, "phone": phone, "nickname": nickname or f"用户{phone[-4:]}",
-               "created_at": datetime.datetime.now(datetime.UTC).isoformat(),
+               "created_at": datetime.datetime.utcnow().isoformat(),
                "last_login": datetime.datetime.utcnow().isoformat(),
                "tier": "free", "daily_usage": 0, "daily_usage_date": today}
     r = requests.post(url, headers=h, json=payload, timeout=10)
@@ -209,13 +209,21 @@ async def get_usage(user_id: str):
 @app.post("/api/v1/analyze")
 async def analyze(reference_image: UploadFile = File(...), user_id: str = Form(default="")):
     data = await reference_image.read()
+    # Resize for faster analysis
+    import cv2, numpy as np
+    arr = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+    if arr is not None and max(arr.shape[:2]) > 1024:
+        scale = 1024 / max(arr.shape[:2])
+        arr = cv2.resize(arr, (int(arr.shape[1]*scale), int(arr.shape[0]*scale)), interpolation=cv2.INTER_AREA)
+        _, enc = cv2.imencode('.jpg', arr, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        data = enc.tobytes()
     payload = {
         "model": "qwen3.7-plus",
         "messages": [{"role": "user", "content": [
             {"type": "image_url", "image_url": {"url": img_b64(data)}},
-            {"type": "text", "text": "分析这张照片的妆容和整体造型。用JSON格式输出，key为以下字段名，每个字段的value是一段连贯的中文描述（不要拆分成颜色/质地/位置/风格子字段，直接写一段话）：底妆、眼妆、眉妆、腮红、唇妆、修容、发型、配饰。"}
+            {"type": "text", "text": "分析这张照片的妆容和面部结构。用JSON格式输出，key为以下中文字段名，每个value是一段连贯的中文描述（不要拆分子字段）：面型（判断脸型并描述轮廓）、底妆、眼妆、眉妆、腮红、唇妆、修容、发型、配饰。"}
         ]}],
-        "max_tokens": 800
+        "max_tokens": 1200
     }
     resp = requests.post(f"{BASE}/compatible-mode/v1/chat/completions", json=payload,
                          headers={"Authorization": f"Bearer {KEY}"}, timeout=60)
@@ -233,43 +241,45 @@ async def analyze(reference_image: UploadFile = File(...), user_id: str = Form(d
 
 
 @app.post("/api/v1/transfer")
-async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(...), user_id: str = Form(default="")):
+async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(...), user_id: str = Form(default=""), reference_image: UploadFile = File(default=None)):
     data = await selfie_image.read()
     from dashscope import MultiModalConversation
     img_b64_local = base64.b64encode(data).decode()
     data_uri = f"data:image/jpeg;base64,{img_b64_local}"
 
+    ref_data = None
+    if reference_image:
+        ref_data = await reference_image.read()
+
     try:
         analysis_json = json.loads(analysis)
         makeup_desc = "；".join([
-            f"{k}：{analysis_json.get(k, '')[:80]}"
+            f"{k}：{analysis_json.get(k, '')[:300]}"
             for k in ["底妆", "眼妆", "眉妆", "腮红", "唇妆", "修容"]
             if analysis_json.get(k)
         ])
-        hair_desc = analysis_json.get("发型", "")
-        accessory_desc = analysis_json.get("配饰", "")
+        hair_desc = analysis_json.get("发型", "")[:200]
+        accessory_desc = analysis_json.get("配饰", "")[:200]
+        face_structure = analysis_json.get("面型", "")[:200]
     except (json.JSONDecodeError, TypeError):
-        makeup_desc = hair_desc = accessory_desc = ""
+        makeup_desc = hair_desc = accessory_desc = face_structure = ""
 
-    prompt_parts = ["Apply a natural everyday makeup look."]
-    prompt_parts.append("Use the reference colors to guide the look naturally.")
-    prompt_parts.append("Keep eyebrows natural - not overdrawn. Lips should be a subtle tint, not full color.")
-    prompt_parts.append("CRITICAL: Keep the original skin color and tone EXACTLY as is. Do NOT whiten, yellow, or lighten the skin.")
-    prompt_parts.append("CRITICAL COLOR: The entire image must NOT have a yellowish or warm color cast. Maintain NEUTRAL/COOL color temperature.")
-    prompt_parts.append("Makeup colors must be pure and cool-toned. Absolutely NO warm/yellow/olive tint on skin, no orange tone on lips.")
-    # Identity preservation - must come early and be very explicit
-    prompt_parts.append("CRITICAL: Do NOT change the person's facial structure — eyes, nose, mouth shape, jawline, face shape, and facial proportions must remain EXACTLY identical.")
-    prompt_parts.append("Do NOT alter the person's age, expression, or head pose. Only the makeup style should change.")
-    if makeup_desc:
-        prompt_parts.append(f"Reference: {makeup_desc}")
-    if hair_desc:
-        prompt_parts.append(f"Change hairstyle to match: {hair_desc[:80]}")
-    if accessory_desc:
-        prompt_parts.append(f"Add accessories: {accessory_desc[:80]}")
-    if not hair_desc and not accessory_desc:
-        prompt_parts.append("Keep clothing, background, identity, and ALL facial features completely unchanged.")
+    prompt_parts = ["Apply the reference makeup to this person naturally."]
+    if face_structure:
+        prompt_parts.append(f"Preserve this face structure exactly: {face_structure}.")
     else:
-        prompt_parts.append("Keep clothing, background, and ALL facial features completely unchanged.")
+        prompt_parts.append("Keep the original skin color, facial features, expression, and background unchanged.")
+    prompt_parts.append("Only the makeup style should change — subtle and natural.")
+    if makeup_desc:
+        prompt_parts.append(f"Makeup reference: {makeup_desc}")
+    if hair_desc:
+        prompt_parts.append(f"Hairstyle: {hair_desc[:80]}")
+    if accessory_desc:
+        prompt_parts.append(f"Accessories: {accessory_desc[:80]}")
+    if not hair_desc and not accessory_desc:
+        prompt_parts.append("Keep clothing, background, and identity completely unchanged.")
+    else:
+        prompt_parts.append("Keep clothing, background, and identity completely unchanged.")
     prompt_text = "\n".join(prompt_parts)
     image_model = os.environ.get("IMAGE_MODEL", "dashscope")
     print(f"[transfer] Using model: {image_model}")
@@ -278,6 +288,8 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
         result = await _transfer_minimax(data, prompt_text)
     elif image_model == "qwen-edit":
         result = await _transfer_qwen_edit(data, prompt_text)
+    elif image_model == "gpt-image-2":
+        result = await _transfer_gpt_image2(data, prompt_text, makeup_desc, hair_desc, accessory_desc)
     else:
         result = await _transfer_dashscope(data_uri, prompt_text)
 
@@ -378,7 +390,18 @@ p{font-size:14px;color:#666;margin:0 0 12px}
 
 async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
     """Use qwen-image-2.0-pro for makeup transfer"""
-    import base64
+    import base64, cv2, numpy as np
+    # Resize image to max 1024px for faster processing
+    img_arr = cv2.imdecode(np.frombuffer(original_data, np.uint8), cv2.IMREAD_COLOR)
+    if img_arr is not None:
+        h, w = img_arr.shape[:2]
+        if max(h, w) > 1024:
+            scale = 1024 / max(h, w)
+            new_w, new_h = int(w * scale), int(h * scale)
+            img_arr = cv2.resize(img_arr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            _, encoded = cv2.imencode('.jpg', img_arr, [cv2.IMWRITE_JPEG_QUALITY, 90])
+            original_data = encoded.tobytes()
+            print(f"[resize] {w}x{h} -> {new_w}x{new_h}")
     img_b64 = base64.b64encode(original_data).decode()
     mm_url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
     payload = {
@@ -408,14 +431,83 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
     images = result.get("output", {}).get("choices", [{}])[0].get("message", {}).get("content", [])
     for item in images:
         if "image" in item:
-            # Download image from OSS and return as base64 to avoid Flutter download issues
-            img_resp = requests.get(item["image"], timeout=60)
-            if img_resp.status_code == 200:
-                import base64
-                b64 = base64.b64encode(img_resp.content).decode()
-                return {"result_image_base64": b64, "result_url": item["image"]}
-            return {"result_url": item["image"]}
+            oss_url = item["image"]
+            try:
+                img_resp = requests.get(oss_url, timeout=10)
+                if img_resp.status_code == 200:
+                    import uuid, os
+                    os.makedirs("uploads", exist_ok=True)
+                    filename = f"{uuid.uuid4()}.png"
+                    path = f"uploads/{filename}"
+                    with open(path, "wb") as f:
+                        f.write(img_resp.content)
+                    local_url = f"{os.environ.get('SITE_URL', 'https://facematch.vanhci.top')}/{path}"
+                    return {"result_image_base64": "", "result_url": local_url}
+            except:
+                pass
+            return {"result_url": oss_url}
     raise HTTPException(500, "Qwen-Edit返回无图片")
+
+
+async def _transfer_gpt_image2(original_data: bytes, prompt_text: str, makeup_desc: str = "", hair_desc: str = "", accessory_desc: str = ""):
+    """Use OpenAI gpt-image-2 via r7z.net relay for makeup transfer"""
+    import subprocess, json, base64, tempfile, os, uuid
+    api_key = os.environ.get("R7Z_API_KEY", "")
+    base_url = os.environ.get("R7Z_BASE_URL", "https://hk1.r7z.net/v1")
+    img_b64 = base64.b64encode(original_data).decode()
+
+    # gpt-image-2 专用提示词
+    gpt_prompt = "Edit this image: apply subtle natural makeup."
+    gpt_prompt += " Keep the face EXACTLY the same — same eyes, nose, mouth shape, expression, head angle."
+    gpt_prompt += " Keep background, clothing, hair, lighting completely unchanged."
+    if makeup_desc:
+        gpt_prompt += f" Add makeup: {makeup_desc}."
+    if hair_desc:
+        gpt_prompt += f" Adjust hair: {hair_desc}."
+    if accessory_desc:
+        gpt_prompt += f" Adjust accessories: {accessory_desc}."
+    if not makeup_desc and not hair_desc and not accessory_desc:
+        gpt_prompt += " Very light natural everyday makeup only."
+
+    payload = {
+        "model": "gpt-image-2",
+        "prompt": gpt_prompt,
+        "image": [f"data:image/jpeg;base64,{img_b64}"],
+        "size": "1024x1024",
+        "quality": "high",
+        "n": 1,
+        "response_format": "b64_json",
+    }
+
+    cmd = [
+        "curl", "-s", "--insecure", "--max-time", "180",
+        "-H", f"Authorization: Bearer {api_key}",
+        "-H", "Content-Type: application/json",
+        "-d", json.dumps(payload),
+        f"{base_url.rstrip('/')}/images/generations",
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=200)
+        data = json.loads(result.stdout)
+    except Exception as e:
+        raise HTTPException(500, f"GPT-Image-2调用失败: {str(e)[:200]}")
+
+    if "error" in data:
+        raise HTTPException(500, f"GPT-Image-2错误: {data['error'].get('message', 'unknown')}")
+    if "data" not in data or not data["data"]:
+        raise HTTPException(500, "GPT-Image-2返回空数据")
+
+    b64_str = data["data"][0].get("b64_json")
+    if not b64_str:
+        raise HTTPException(500, "GPT-Image-2无b64_json")
+
+    img_bytes = base64.b64decode(b64_str)
+    os.makedirs("uploads", exist_ok=True)
+    stable_path = f"uploads/{uuid.uuid4()}.png"
+    with open(stable_path, "wb") as f:
+        f.write(img_bytes)
+    return {"result_image_base64": base64.b64encode(img_bytes).decode(), "result_url": f"/{stable_path}"}
 
 
 # ─── 历史模块 ───────────────────────────────
@@ -442,7 +534,7 @@ async def save_history(data: dict):
         "result_image_url": data.get("result_image_url", ""),
         "analysis": json.dumps(data.get("analysis", {}), ensure_ascii=False),
         "status": "completed",
-        "created_at": datetime.datetime.now(datetime.UTC).isoformat()
+        "created_at": datetime.datetime.utcnow().isoformat()
     }
     r = requests.post(url, headers=h, json=record, timeout=10)
     print(f"[save_history] Supabase response: {r.status_code} {r.text[:200]}")

@@ -141,7 +141,7 @@ class AnalysisScreen extends StatelessWidget {
                             onPressed: provider.selectedCategories.isNotEmpty
                                 ? () async {
                                     await provider.generateTransfer();
-                                    if (context.mounted && provider.resultImage != null) {
+                                    if (context.mounted) {
                                       Navigator.push(context, MaterialPageRoute(builder: (_) => const ResultScreen()));
                                     }
                                   }

@@ -33,7 +33,7 @@ class ResultScreen extends StatelessWidget {
         refImg = refFrame.image;
       }
 
-      String path;
+      String path = resultImage.path;
       if (refImg != null) {
         const targetH = 600.0;
         const gap = 8.0;
@@ -57,17 +57,9 @@ class ResultScreen extends StatelessWidget {
         path = '${dir.path}/share_$ts.png';
         await File(path).writeAsBytes(byteData!.buffer.asUint8List());
       } else {
-        final recorder = ui.PictureRecorder();
-        final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, resImg.width.toDouble(), resImg.height.toDouble()));
-        canvas.drawImage(resImg, Offset.zero, Paint());
-        final picture = recorder.endRecording();
-        final single = await picture.toImage(resImg.width, resImg.height);
-        final byteData = await single.toByteData(format: ui.ImageByteFormat.png);
-        resImg.dispose(); single.dispose();
-        path = '${dir.path}/share_$ts.png';
-        await File(path).writeAsBytes(byteData!.buffer.asUint8List());
+        resImg.dispose();
       }
-
+      refImg?.dispose();
       final box = context.findRenderObject() as RenderBox?;
       final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
       await Share.shareXFiles([XFile(path)], text: '颜摹仿妆', sharePositionOrigin: rect);

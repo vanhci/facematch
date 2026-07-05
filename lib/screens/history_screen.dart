@@ -161,14 +161,15 @@ class _HistoryCard extends StatelessWidget {
     if (localPath != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.iconBg),
-        child: Image.file(File(localPath), fit: BoxFit.cover,
+        child: Image.file(File(localPath), width: 36, height: 48, fit: BoxFit.cover,
+          cacheWidth: 100,
           errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
       );
     }
     if (url != null && url.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.iconBg),
-        child: Image.network(url, fit: BoxFit.cover,
+        child: Image.network(url, width: 36, height: 48, fit: BoxFit.cover,
           errorBuilder: (_,_,_) => const Icon(Icons.image_outlined, size: 16, color: AppColors.neutral300)),
       );
     }

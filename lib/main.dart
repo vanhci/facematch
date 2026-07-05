@@ -7,6 +7,7 @@ import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/analysis_screen.dart';
 import 'screens/login_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +54,21 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  String _version = '';
   final _pages = const [HomeScreen(), AnalysisScreen(), HistoryScreen()];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) setState(() => _version = 'v${info.version}+${info.buildNumber}');
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,41 +100,51 @@ class _MainShellState extends State<MainShell> {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) => setState(() => _currentIndex = i),
-            backgroundColor: Colors.transparent,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.neutral400,
-            type: BottomNavigationBarType.fixed,
-            elevation: 0,
-            selectedFontSize: 11,
-            unselectedFontSize: 11,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              child: BottomNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: (i) => setState(() => _currentIndex = i),
+                backgroundColor: Colors.transparent,
+                selectedItemColor: AppColors.primary,
+                unselectedItemColor: AppColors.neutral400,
+                type: BottomNavigationBarType.fixed,
+                elevation: 0,
+                selectedFontSize: 11,
+                unselectedFontSize: 11,
+                selectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+                unselectedLabelStyle: const TextStyle(letterSpacing: 0.3),
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.face_retouching_natural_outlined, size: 24),
+                    activeIcon: Icon(Icons.face_retouching_natural, size: 24),
+                    label: '仿妆',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.visibility_outlined, size: 24),
+                    activeIcon: Icon(Icons.visibility, size: 24),
+                    label: '分析',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.history_outlined, size: 24),
+                    activeIcon: Icon(Icons.history, size: 24),
+                    label: '历史',
+                  ),
+                ],
+              ),
             ),
-            unselectedLabelStyle: const TextStyle(letterSpacing: 0.3),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.face_retouching_natural_outlined, size: 24),
-                activeIcon: Icon(Icons.face_retouching_natural, size: 24),
-                label: '仿妆',
+            if (_version.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom > 0 ? 2 : 6),
+                child: Text(_version, style: const TextStyle(fontSize: 10, color: AppColors.neutral300)),
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.visibility_outlined, size: 24),
-                activeIcon: Icon(Icons.visibility, size: 24),
-                label: '分析',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.history_outlined, size: 24),
-                activeIcon: Icon(Icons.history, size: 24),
-                label: '历史',
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );

@@ -91,7 +91,7 @@ class MatchResult {
 
   factory MatchResult.fromJson(Map<String, dynamic> json) {
     String raw = json['created_at'] as String;
-    if (!raw.endsWith('Z')) {
+    if (!raw.endsWith('Z') && raw.indexOf('+') < 0 && raw.lastIndexOf('-') <= 10) {
       raw = '${raw}Z';
     }
     return MatchResult(

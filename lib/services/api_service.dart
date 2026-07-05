@@ -113,7 +113,8 @@ class ApiService implements MakeupApi {
         resultUrl!,
         options: Options(
           responseType: ResponseType.bytes,
-          receiveTimeout: const Duration(seconds: 30),
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 120),
         ),
       );
       final tempDir = Directory.systemTemp;

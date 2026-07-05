@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:path_provider/path_provider.dart';
 import '../models/makeup_analysis.dart';
 import '../services/api_service.dart';
 import '../services/background_task.dart';
@@ -71,8 +74,52 @@ class MatchProvider extends ChangeNotifier {
   // ─── Init ───────────────────────────────
 
   Future<void> init() async {
-    await _loadUsage();
-    await _loadHistory();
+    // Load cached usage immediately from local storage (no network)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _dailyUsage = prefs.getInt('daily_usage') ?? 0;
+      _dailyLimit = prefs.getInt('daily_limit') ?? 3;
+      _bonusCredits = prefs.getInt('bonus_credits') ?? 0;
+      notifyListeners();
+    } catch (_) {}
+    // Fire network refreshes asynchronously — don't block app startup
+    unawaited(_loadUsage());
+    unawaited(_loadHistory());
+    // Pre-clean stale cache entries older than 7 days
+    _cleanOldCache();
+  }
+
+  Future<String> _cacheDir() async {
+    final dir = Directory('${(await getApplicationCacheDirectory()).path}/facematch_history');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir.path;
+  }
+
+  Future<String?> _cacheImage(String url, String id, String type) async {
+    if (url.isEmpty) return null;
+    try {
+      final cacheDir = await _cacheDir();
+      final path = '$cacheDir/${id}_$type.png';
+      if (await File(path).exists()) return path;
+      final resp = await ApiService().dio.get(url, options: dio.Options(responseType: dio.ResponseType.bytes));
+      await File(path).writeAsBytes(resp.data as List<int>);
+      return path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _cleanOldCache() async {
+    try {
+      final dir = Directory(await _cacheDir());
+      if (!await dir.exists()) return;
+      final cutoff = DateTime.now().subtract(const Duration(days: 7));
+      await for (final f in dir.list()) {
+        if (f is File && await f.lastModified().then((t) => t.isBefore(cutoff))) {
+          await f.delete();
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadUsage() async {
@@ -84,6 +131,13 @@ class MatchProvider extends ChangeNotifier {
       _dailyUsage = data['daily_usage'] as int? ?? 0;
       _dailyLimit = data['daily_limit'] as int? ?? 3;
       _bonusCredits = data['bonus_credits'] as int? ?? 0;
+      // Cache to local storage for instant startup next time
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('daily_usage', _dailyUsage);
+        await prefs.setInt('daily_limit', _dailyLimit);
+        await prefs.setInt('bonus_credits', _bonusCredits);
+      } catch (_) {}
       notifyListeners();
     } catch (e) {
       debugPrint('load usage error: $e');
@@ -108,7 +162,9 @@ class MatchProvider extends ChangeNotifier {
               createdAt: () {
                 final raw = j['created_at'] as String? ?? '';
                 if (raw.isEmpty) return DateTime.now();
-                if (!raw.endsWith('Z')) return DateTime.parse('${raw}Z').toLocal();
+                if (!raw.endsWith('Z') && raw.indexOf('+') < 0 && raw.lastIndexOf('-') <= 10) {
+                  return DateTime.parse('${raw}Z').toLocal();
+                }
                 return DateTime.parse(raw).toLocal();
               }(),
               referenceImagePath: null,
@@ -121,9 +177,36 @@ class MatchProvider extends ChangeNotifier {
             );
           }).toList(),
         );
+      // Cache images async
+      _cacheHistoryImages();
       notifyListeners();
     } catch (e) {
       debugPrint('load history error: $e');
+    }
+  }
+
+  Future<void> _cacheHistoryImages() async {
+    for (int i = 0; i < _history.length; i++) {
+      final item = _history[i];
+      String? refPath, resPath;
+      if (item.referenceImageUrl != null && item.referenceImageUrl!.isNotEmpty) {
+        refPath = await _cacheImage(item.referenceImageUrl!, item.id, 'ref');
+      }
+      if (item.resultImageUrl != null && item.resultImageUrl!.isNotEmpty) {
+        resPath = await _cacheImage(item.resultImageUrl!, item.id, 'res');
+      }
+      if (refPath != null || resPath != null) {
+        _history[i] = MatchResult(
+          id: item.id, createdAt: item.createdAt,
+          referenceImagePath: refPath ?? item.referenceImagePath,
+          selfieImagePath: item.selfieImagePath,
+          resultImagePath: resPath ?? item.resultImagePath,
+          resultImageUrl: item.resultImageUrl,
+          referenceImageUrl: item.referenceImageUrl,
+          analysis: item.analysis, status: item.status,
+        );
+        notifyListeners();
+      }
     }
   }
 
