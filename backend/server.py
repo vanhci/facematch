@@ -1,10 +1,11 @@
-import os, base64, json, uuid, datetime, shutil
+from __future__ import annotations
+import os, base64, json, uuid, datetime, shutil, asyncio
 from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-import requests
+import httpx
 
 # Upload directory for persisted images
 UPLOAD_DIR = Path(__file__).parent / "uploads"
@@ -26,6 +27,34 @@ app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Serve static HTML for auth confirmation
 from fastapi.responses import HTMLResponse
+
+# Global async HTTP client for all network calls
+client: httpx.AsyncClient | None = None
+
+
+def get_client() -> httpx.AsyncClient:
+    """Return the global async HTTP client, lazily initialised."""
+    global client
+    if client is None:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(120.0))
+        print("[async] Created global httpx.AsyncClient(timeout=120.0)")
+    return client
+
+
+@app.on_event("startup")
+async def startup():
+    """Ensure the global client is created on startup."""
+    _ = get_client()
+    print("[async] Server startup complete")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Cleanly close the global HTTP client on shutdown."""
+    global client
+    if client is not None:
+        await client.aclose()
+        print("[async] Global httpx.AsyncClient closed")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -54,14 +83,16 @@ p { font-size: 14px; color: #888; line-height: 1.6; margin: 0; }
 </div></body></html>
 """)
 
-    # Verify the code via Supabase Auth API
+    # Verify the code via Supabase Auth API (async)
     try:
+        c = get_client()
         h = supabase_headers()
         verify_url = f"{SUPABASE_URL}/auth/v1/verify"
         payload = {"type": type or "signup", "token": code, "redirect_to": ""}
-        r = requests.post(verify_url, headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"}, json=payload, timeout=10)
+        r = await c.post(verify_url, headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"}, json=payload, timeout=10)
         success = r.status_code in (200, 201)
-    except Exception:
+    except Exception as e:
+        print(f"[auth_confirm] verify error: {e}")
         success = False
 
     if success:
@@ -137,21 +168,23 @@ def img_b64(data):
 @app.post("/api/v2/user/login")
 async def login(phone: str = Form(...), nickname: str = Form(default="")):
     """手机号登录/注册"""
+    c = get_client()
     url = f"{SUPABASE_URL}/rest/v1/facematch_users"
     h = supabase_headers()
     # Check if user exists
-    r = requests.get(url, headers=h, params={"phone": f"eq.{phone}"}, timeout=10)
+    print(f"[login] Checking user phone={phone}")
+    r = await c.get(url, headers=h, params={"phone": f"eq.{phone}"}, timeout=10)
     users = r.json()
     if users and len(users) > 0:
         user = users[0]
         # Update last_login
-        requests.patch(f"{url}?id=eq.{user['id']}", headers=h,
-                       json={"last_login": datetime.datetime.utcnow().isoformat()}, timeout=10)
+        await c.patch(f"{url}?id=eq.{user['id']}", headers=h,
+                      json={"last_login": datetime.datetime.utcnow().isoformat()}, timeout=10)
         # Reset daily usage if new day
         today = datetime.date.today().isoformat()
         if user.get("daily_usage_date") != today:
-            requests.patch(f"{url}?id=eq.{user['id']}", headers=h,
-                           json={"daily_usage": 0, "daily_usage_date": today}, timeout=10)
+            await c.patch(f"{url}?id=eq.{user['id']}", headers=h,
+                          json={"daily_usage": 0, "daily_usage_date": today}, timeout=10)
         return {"user_id": user["id"], "nickname": user["nickname"], "tier": user["tier"],
                 "daily_usage": 0 if user.get("daily_usage_date") != today else user["daily_usage"],
                 "bonus_credits": user["bonus_credits"], "is_new": False}
@@ -162,7 +195,8 @@ async def login(phone: str = Form(...), nickname: str = Form(default="")):
                "created_at": datetime.datetime.utcnow().isoformat(),
                "last_login": datetime.datetime.utcnow().isoformat(),
                "tier": "free", "daily_usage": 0, "daily_usage_date": today}
-    r = requests.post(url, headers=h, json=payload, timeout=10)
+    print(f"[login] Creating user {user_id}")
+    r = await c.post(url, headers=h, json=payload, timeout=10)
     if r.status_code not in (200, 201):
         raise HTTPException(500, "注册失败")
     return {"user_id": user_id, "nickname": payload["nickname"], "tier": "free",
@@ -172,11 +206,13 @@ async def login(phone: str = Form(...), nickname: str = Form(default="")):
 @app.get("/api/v2/user/usage/{user_id}")
 async def get_usage(user_id: str):
     """查询用户用量和剩余次数，自动创建用户记录"""
+    c = get_client()
     url = f"{SUPABASE_URL}/rest/v1/facematch_users"
     h = supabase_headers()
-    r = requests.get(url, headers=h,
-                     params={"id": f"eq.{user_id}", "select": "tier,daily_usage,daily_usage_date,bonus_credits,premium_expires_at"},
-                     timeout=10)
+    print(f"[get_usage] Querying user_id={user_id}")
+    r = await c.get(url, headers=h,
+                    params={"id": f"eq.{user_id}", "select": "tier,daily_usage,daily_usage_date,bonus_credits,premium_expires_at"},
+                    timeout=10)
     users = r.json()
     if not users:
         # Auto-create user record for Auth users
@@ -186,12 +222,12 @@ async def get_usage(user_id: str):
                    "last_login": datetime.datetime.utcnow().isoformat(),
                    "tier": "free", "daily_usage": 0, "daily_usage_date": today}
         try:
-            r2 = requests.post(url, headers=h, json=payload, timeout=10)
+            r2 = await c.post(url, headers=h, json=payload, timeout=10)
             if r2.status_code in (200, 201):
                 return {"tier": "free", "daily_usage": 0, "daily_limit": limit,
                         "bonus_credits": 0, "remaining": limit, "is_premium": False}
-        except:
-            pass
+        except Exception as e:
+            print(f"[get_usage] auto-create error: {e}")
         raise HTTPException(404, "用户不存在")
     user = users[0]
     today = datetime.date.today().isoformat()
@@ -208,6 +244,7 @@ async def get_usage(user_id: str):
 
 @app.post("/api/v1/analyze")
 async def analyze(reference_image: UploadFile = File(...), user_id: str = Form(default="")):
+    c = get_client()
     data = await reference_image.read()
     # Resize for faster analysis
     import cv2, numpy as np
@@ -225,8 +262,9 @@ async def analyze(reference_image: UploadFile = File(...), user_id: str = Form(d
         ]}],
         "max_tokens": 1200
     }
-    resp = requests.post(f"{BASE}/compatible-mode/v1/chat/completions", json=payload,
-                         headers={"Authorization": f"Bearer {KEY}"}, timeout=60)
+    print(f"[analyze] Calling qwen3.7-plus for user_id={user_id}")
+    resp = await c.post(f"{BASE}/compatible-mode/v1/chat/completions", json=payload,
+                        headers={"Authorization": f"Bearer {KEY}"}, timeout=60)
     if resp.status_code != 200:
         raise HTTPException(500, f"分析失败: {resp.text}")
     content = resp.json()["choices"][0]["message"]["content"]
@@ -235,7 +273,7 @@ async def analyze(reference_image: UploadFile = File(...), user_id: str = Form(d
 
     # Record usage
     if user_id:
-        _record_usage(user_id, "analyze")
+        await _record_usage(user_id, "analyze")
 
     return {"analysis": content}
 
@@ -273,13 +311,13 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     if makeup_desc:
         prompt_parts.append(f"Makeup reference: {makeup_desc}")
     if hair_desc:
-        prompt_parts.append(f"Hairstyle: {hair_desc[:80]}")
+        prompt_parts.append(f"Hairstyle: {hair_desc[:200]}")
     if accessory_desc:
-        prompt_parts.append(f"Accessories: {accessory_desc[:80]}")
+        prompt_parts.append(f"Accessories: {accessory_desc[:200]}")
     if not hair_desc and not accessory_desc:
         prompt_parts.append("Keep clothing, background, and identity completely unchanged.")
     else:
-        prompt_parts.append("Keep clothing, background, and identity completely unchanged.")
+        prompt_parts.append("Keep facial features, background, and clothing unchanged.")
     prompt_text = "\n".join(prompt_parts)
     image_model = os.environ.get("IMAGE_MODEL", "dashscope")
     print(f"[transfer] Using model: {image_model}")
@@ -295,16 +333,19 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
 
     # Record usage
     if user_id:
-        _record_usage(user_id, "transfer")
+        await _record_usage(user_id, "transfer")
 
     return result
 
 
 async def _transfer_dashscope(data_uri: str, prompt_text: str):
-    """Use DashScope wan2.7-image-pro for transfer"""
+    """Use DashScope wan2.7-image-pro for transfer.
+    Uses sync SDK via asyncio.to_thread to avoid blocking the event loop."""
     from dashscope import MultiModalConversation
     messages = [{"role": "user", "content": [{"image": data_uri}, {"text": prompt_text}]}]
-    resp = MultiModalConversation.call(
+    print(f"[_transfer_dashscope] Calling wan2.7-image-pro via to_thread")
+    resp = await asyncio.to_thread(
+        MultiModalConversation.call,
         model="wan2.7-image-pro", messages=messages, api_key=KEY,
         parameters={"size": "1328*1328", "n": 1, "watermark": False, "denoise_strength": 0.1}
     )
@@ -317,6 +358,7 @@ async def _transfer_dashscope(data_uri: str, prompt_text: str):
 
 async def _transfer_minimax(original_data: bytes, prompt_text: str):
     """Use MiniMax image-01 for transfer with subject reference"""
+    import requests
     import base64
     mm_key = os.environ.get("MINIMAX_API_KEY", "")
     mm_url = os.environ.get("MINIMAX_API_URL", "https://api.minimaxi.com/v1/image_generation")
@@ -389,7 +431,8 @@ p{font-size:14px;color:#666;margin:0 0 12px}
 
 
 async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
-    """Use qwen-image-2.0-pro for makeup transfer"""
+    """Use qwen-image-2.0-pro for makeup transfer (async via httpx)"""
+    c = get_client()
     import base64, cv2, numpy as np
     # Resize image to max 1024px for faster processing
     img_arr = cv2.imdecode(np.frombuffer(original_data, np.uint8), cv2.IMREAD_COLOR)
@@ -418,7 +461,8 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
         "parameters": {"result_format": "message"}
     }
     headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
-    resp = requests.post(mm_url, json=payload, headers=headers, timeout=120)
+    print(f"[_transfer_qwen_edit] Calling qwen-image-2.0-pro async")
+    resp = await c.post(mm_url, json=payload, headers=headers, timeout=120)
     if resp.status_code != 200:
         err_msg = resp.text[:200]
         try:
@@ -432,21 +476,40 @@ async def _transfer_qwen_edit(original_data: bytes, prompt_text: str):
     for item in images:
         if "image" in item:
             oss_url = item["image"]
-            try:
-                img_resp = requests.get(oss_url, timeout=10)
-                if img_resp.status_code == 200:
-                    import uuid, os
-                    os.makedirs("uploads", exist_ok=True)
-                    filename = f"{uuid.uuid4()}.png"
-                    path = f"uploads/{filename}"
-                    with open(path, "wb") as f:
-                        f.write(img_resp.content)
-                    local_url = f"{os.environ.get('SITE_URL', 'https://facematch.vanhci.top')}/{path}"
-                    return {"result_image_base64": "", "result_url": local_url}
-            except:
-                pass
-            return {"result_url": oss_url}
+            # Save OSS URL for lazy loading
+            tid = str(uuid.uuid4())
+            _oss_cache[tid] = oss_url
+            return {"result_image_base64": "", "result_url": f"/oss/{tid}"}
     raise HTTPException(500, "Qwen-Edit返回无图片")
+
+
+# OSS proxy: lazy-download from DashScope OSS, cache locally for reuse
+_oss_cache: dict[str, str] = {}
+
+@app.get("/oss/{token}")
+async def oss_proxy(token: str):
+    # Check if already saved as local file
+    local_path = f"uploads/_oss_{token}.png"
+    if os.path.exists(local_path):
+        from fastapi.responses import FileResponse
+        return FileResponse(local_path, media_type="image/png")
+
+    url = _oss_cache.get(token)
+    if not url:
+        raise HTTPException(404, "OSS URL not found or expired")
+
+    try:
+        c = get_client()
+        print(f"[oss_proxy] Fetching OSS URL async for token={token}")
+        resp = await c.get(url, timeout=15)
+        if resp.status_code != 200:
+            raise HTTPException(502, f"OSS fetch failed: {resp.status_code}")
+        with open(local_path, "wb") as f:
+            f.write(resp.content)
+        from fastapi.responses import FileResponse
+        return FileResponse(local_path, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(502, f"OSS proxy error: {str(e)[:100]}")
 
 
 async def _transfer_gpt_image2(original_data: bytes, prompt_text: str, makeup_desc: str = "", hair_desc: str = "", accessory_desc: str = ""):
@@ -481,7 +544,7 @@ async def _transfer_gpt_image2(original_data: bytes, prompt_text: str, makeup_de
 
     cmd = [
         "curl", "-s", "--insecure", "--max-time", "180",
-        "-H", f"Authorization: Bearer {api_key}",
+        "-H", f"Authorization: Bearer ***",
         "-H", "Content-Type: application/json",
         "-d", json.dumps(payload),
         f"{base_url.rstrip('/')}/images/generations",
@@ -514,15 +577,18 @@ async def _transfer_gpt_image2(original_data: bytes, prompt_text: str, makeup_de
 
 @app.get("/api/v2/history/{user_id}")
 async def get_history(user_id: str, limit: int = 50, offset: int = 0):
+    c = get_client()
     url = f"{SUPABASE_URL}/rest/v1/facematch_history"
-    r = requests.get(url, headers=supabase_headers(),
-                     params={"user_id": f"eq.{user_id}", "order": "created_at.desc",
-                             "limit": limit, "offset": offset}, timeout=10)
+    print(f"[get_history] user_id={user_id} limit={limit} offset={offset}")
+    r = await c.get(url, headers=supabase_headers(),
+                    params={"user_id": f"eq.{user_id}", "order": "created_at.desc",
+                            "limit": limit, "offset": offset}, timeout=10)
     return r.json()
 
 
 @app.post("/api/v2/history")
 async def save_history(data: dict):
+    c = get_client()
     url = f"{SUPABASE_URL}/rest/v1/facematch_history"
     h = supabase_headers()
     h["Prefer"] = "return=representation"
@@ -536,7 +602,8 @@ async def save_history(data: dict):
         "status": "completed",
         "created_at": datetime.datetime.utcnow().isoformat()
     }
-    r = requests.post(url, headers=h, json=record, timeout=10)
+    print(f"[save_history] Saving record for user_id={data.get('user_id')}")
+    r = await c.post(url, headers=h, json=record, timeout=10)
     print(f"[save_history] Supabase response: {r.status_code} {r.text[:200]}")
     if r.status_code not in (200, 201):
         raise HTTPException(500, "保存历史失败")
@@ -545,9 +612,11 @@ async def save_history(data: dict):
 
 @app.delete("/api/v2/history/{record_id}")
 async def delete_history(record_id: str, user_id: str = Form(...)):
+    c = get_client()
     url = f"{SUPABASE_URL}/rest/v1/facematch_history"
-    r = requests.delete(f"{url}?id=eq.{record_id}&user_id=eq.{user_id}",
-                        headers=supabase_headers(), timeout=10)
+    print(f"[delete_history] record_id={record_id} user_id={user_id}")
+    r = await c.delete(f"{url}?id=eq.{record_id}&user_id=eq.{user_id}",
+                       headers=supabase_headers(), timeout=10)
     return {"deleted": r.status_code in (200, 204)}
 
 
@@ -564,32 +633,33 @@ async def upload_image(file: UploadFile = File(...)):
 
 # ─── 内部 ───────────────────────────────
 
-def _record_usage(user_id: str, action: str):
-    """记录用量并更新 daily_usage"""
+async def _record_usage(user_id: str, action: str):
+    """记录用量并更新 daily_usage (async)"""
     try:
+        c = get_client()
         h = supabase_headers()
         today = datetime.date.today().isoformat()
 
         # Insert usage record
-        requests.post(f"{SUPABASE_URL}/rest/v1/facematch_usage", headers=h, json={
+        await c.post(f"{SUPABASE_URL}/rest/v1/facematch_usage", headers=h, json={
             "id": str(uuid.uuid4()), "user_id": user_id, "action": action,
             "cost_credits": 1, "created_at": datetime.datetime.utcnow().isoformat()
         }, timeout=5)
 
         # Increment daily usage
         user_url = f"{SUPABASE_URL}/rest/v1/facematch_users"
-        r = requests.get(user_url, headers=h, params={"id": f"eq.{user_id}",
+        r = await c.get(user_url, headers=h, params={"id": f"eq.{user_id}",
                          "select": "daily_usage,daily_usage_date"}, timeout=5)
         user = r.json()[0] if r.text and r.text != "[]" else {}
         if user.get("daily_usage_date") != today:
-            requests.patch(f"{user_url}?id=eq.{user_id}", headers=h,
-                           json={"daily_usage": 1, "daily_usage_date": today}, timeout=5)
+            await c.patch(f"{user_url}?id=eq.{user_id}", headers=h,
+                          json={"daily_usage": 1, "daily_usage_date": today}, timeout=5)
         else:
-            requests.patch(f"{user_url}?id=eq.{user_id}", headers=h,
-                           json={"daily_usage": (user.get("daily_usage") or 0) + 1}, timeout=5)
+            await c.patch(f"{user_url}?id=eq.{user_id}", headers=h,
+                          json={"daily_usage": (user.get("daily_usage") or 0) + 1}, timeout=5)
     except Exception as e:
         print(f"Usage recording error (non-fatal): {e}")
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8765)
+    uvicorn.run("server:app", host="0.0.0.0", port=8765, workers=4)

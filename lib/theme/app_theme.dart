@@ -3,87 +3,78 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary — Rose Gold (modern, feminine, sophisticated)
-  static const bgColor = Color(0xFFFCF5F5); // 暖粉白
-  static const primary = Color(0xFFF0708D); // 玫瑰金主色
-  static const warmBrown = Color(0xFF5C4333); // 暖棕文字
-  static const warmLight = Color(0xFFF5F2EF); // 暖白卡片
+  // YanMo palette — warm rose/pink tones
+  static const bgColor = Color(0xFFFCEEE9);
+  static const bgGradientMid = Color(0xFFFDF6F3);
+  static const bgGradientBot = Color(0xFFFBF0EC);
+  static const primary = Color(0xFFE8899A); // rose
+  static const primaryDark = Color(0xFFB98374); // warm brown
   static const primary50 = Color(0xFFFFF5F7);
-  static const primary100 = Color(0xFFFFE0E6);
-  static const primary200 = Color(0xFFFFB8C8);
-  static const primary300 = Color(0xFFFC8BA2);
-  static const primary400 = Color(0xFFF0708D);
-  static const primary500 = Color(0xFFE85978);
-  static const primary600 = Color(0xFFD43A5A);
-  static const primary700 = Color(0xFFB82242);
-
-  // Neutral — Warm Grey
-  static const textMain = Color(0xFF2C2C2C); // 主标题深灰
-  static const textSub = Color(0xFF8E8E93); // 副标题浅灰
+  static const primary100 = Color(0xFFFCE4E8);
+  static const primary200 = Color(0xFFF9C9D0);
+  static const primary300 = Color(0xFFE8899A);
+  static const primary400 = Color(0xFFDA7A8A);
+  static const primary500 = Color(0xFFC06978);
+  static const primary600 = Color(0xFFA65866);
+  static const primary700 = Color(0xFF8C4754);
+  static const textMain = Color(0xFF4A3B38);
+  static const textSub = Color(0xFFC79E90);
+  static const textMuted = Color(0xFFD6B6AA);
   static const neutral50 = Color(0xFFFCFAFA);
-  static const neutral100 = Color(0xFFF5F5F5);
-  static const neutral200 = Color(0xFFEEEEEE);
-  static const neutral300 = Color(0xFFD6D6D6);
-  static const neutral400 = Color(0xFFAAAAAA);
-  static const neutral500 = Color(0xFF8E8E93);
-  static const neutral600 = Color(0xFF555555);
-  static const neutral700 = Color(0xFF2D2D2D);
-  static const neutral800 = Color(0xFF1A1A1A);
-
-  // Semantic
+  static const neutral100 = Color(0xFFF9F0ED);
+  static const neutral200 = Color(0xFFF0E3DE);
+  static const neutral300 = Color(0xFFE0D0CA);
+  static const neutral400 = Color(0xFFC79E90);
+  static const neutral500 = Color(0xFFB0887A);
+  static const neutral600 = Color(0xFF8A6A5E);
+  static const neutral700 = Color(0xFF6B5248);
+  static const neutral800 = Color(0xFF4A3B38);
   static const success = Color(0xFF34C759);
   static const warning = Color(0xFFFF9500);
   static const error = Color(0xFFFF3B30);
+  static const cardBorder = Color(0xFFFFFFFF);
+  static const navActiveBg = Color(0xFFF9DCE0);
+  static const iconRose = Color(0xFFE0A79A);
+  static const iconDark = Color(0xFFB07C63);
+  static const iconPetal = Color(0xFFE8A0A8);
+  static const iconSparkle = Color(0xFFE7B7A6);
+  static const brownText = Color(0xFFB98374);
+  static const brownLight = Color(0xFFC79E90);
+  static const brownDark = Color(0xFF4A3B38);
+  static const errorRed = Color(0xFFFF3B30);
+  static const shadowPink = Color(0xFFF4A6AD);
 
-  // Gradients
+  static const cardRadius = 24.0;
+  static const iconRadius = 22.0;
+  static const buttonRadius = 27.0;
+  static const clipRadius = 21.0;
+  static const navRadius = 28.0;
+
   static const gradientRose = LinearGradient(
-    colors: [Color(0xFFFFA8B6), Color(0xFFF0708D)],
+    colors: [Color(0xFFFCA8AE), Color(0xFFF7C8CE)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  // Shadows
-  static List<BoxShadow> get softShadow => [
+  static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: const Color(0xFFF0708D).withValues(alpha: 0.12),
-      blurRadius: 24,
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 16,
       offset: const Offset(0, 8),
     ),
   ];
-  static List<BoxShadow> get cardShadow => [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.04),
-      blurRadius: 16,
-      offset: const Offset(0, 4),
-    ),
-  ];
 }
 
-/// Design-system border-radius constants
-///
-/// See DESIGN.md §5 Border Radius.
 class AppRadius {
   AppRadius._();
-
-  /// Fully round — pills, buttons, FABs (999)
   static const pill = 99.0;
-
-  /// Large containers — cards, modals, bottom sheets (20)
-  static const card = 20.0;
-
-  /// Medium containers — icon backgrounds, chips (12)
+  static const card = 24.0;
   static const iconBg = 12.0;
-
-  /// Small surfaces — labels, small avatars, thumbnails (8)
   static const label = 8.0;
 }
 
-/// Spacing constants — use `gap()` for convenient SizedBox sizing.
-///
-/// See DESIGN.md §4 Spacing.
 class AppSpacing {
   AppSpacing._();
-
   static const double xs = 4;
   static const double sm = 8;
   static const double md = 12;
@@ -92,11 +83,7 @@ class AppSpacing {
   static const double xxl = 32;
 }
 
-extension SizedBoxGap on num {
-  /// Creates a [SizedBox] with [width] and [height] set to this value.
-  /// ```dart
-  /// 12.gap()  // SizedBox(width: 12, height: 12)
-  /// ```
+extension NumGap on num {
   Widget gap() => SizedBox(width: toDouble(), height: toDouble());
 }
 
@@ -120,75 +107,17 @@ class AppTheme {
         centerTitle: true,
         surfaceTintColor: Colors.transparent,
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w600,
-          height: 1.2,
-          letterSpacing: -0.3,
-          color: AppColors.neutral800,
-        ),
-        displayMedium: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          height: 1.25,
-          letterSpacing: -0.2,
-          color: AppColors.neutral800,
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          height: 1.3,
-          letterSpacing: 0.2,
-          color: AppColors.neutral800,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          height: 1.35,
-          letterSpacing: 0.3,
-          color: AppColors.neutral800,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-          height: 1.6,
-          letterSpacing: 0.3,
-          color: AppColors.neutral700,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          height: 1.6,
-          letterSpacing: 0.2,
-          color: AppColors.neutral600,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 1.5,
-          letterSpacing: 0.3,
-          color: AppColors.neutral400,
-        ),
-        labelLarge: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          height: 1.2,
-          letterSpacing: 0.5,
-          color: AppColors.neutral700,
-        ),
-      ),
+      fontFamily: 'PingFang SC',
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: const Color(0xFF4A1A2A), // 深玫瑰色 — WCAG AA ≥ 4.5:1
+          foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           elevation: 0,
-          shadowColor: AppColors.primary,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -205,10 +134,10 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
-        shadowColor: Colors.black.withValues(alpha: 0.04),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.card),
-          side: const BorderSide(color: AppColors.neutral200, width: 0.5),
+          side: const BorderSide(color: Colors.white, width: 3),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       ),

@@ -97,12 +97,11 @@ class ResultScreen extends StatelessWidget {
                 Stack(
                   children: [
                     ComparisonSlider(
-                      beforeImage: provider.selfieImage ?? provider.referenceImage,
-                      afterImage: provider.resultImage,
-                      beforeLabel: provider.selfieImage != null ? '原图' : '参考妆',
+                      beforeImage: provider.historyRefImage ?? provider.historySelfieImage ?? provider.selfieImage ?? provider.referenceImage,
+                      beforeLabel: provider.historySelfieImage != null ? '原图' : provider.selfieImage != null ? '原图' : '参考妆',
                       afterLabel: '仿妆',
                     ),
-                    if (provider.isHistoryLoading)
+                    if (provider.isHistoryLoading || provider.isGenerating)
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(

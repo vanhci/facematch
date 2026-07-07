@@ -209,7 +209,7 @@ class _CategoryCardState extends State<_CategoryCard>
                     child: Icon(
                       _icon(widget.title),
                       size: 20,
-                      color: AppColors.warmBrown,
+                      color: AppColors.primaryDark,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -219,7 +219,7 @@ class _CategoryCardState extends State<_CategoryCard>
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.warmBrown,
+                        color: AppColors.primaryDark,
                       ),
                     ),
                   ),

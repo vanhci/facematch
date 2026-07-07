@@ -22,6 +22,9 @@ class HistoryScreen extends StatelessWidget {
       ),
       body: Consumer<MatchProvider>(
         builder: (context, provider, _) {
+          if (!provider.isHistoryLoaded) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+          }
           if (provider.history.isEmpty) {
             return Center(
               child: Column(
@@ -41,13 +44,16 @@ class HistoryScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
+          return RefreshIndicator(
+            onRefresh: () => context.read<MatchProvider>().refreshHistory(),
+            child: ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: provider.history.length,
             itemBuilder: (context, index) {
               final result = provider.history[index];
               return _HistoryCard(result: result);
             },
+          ),
           );
         },
       ),

@@ -53,13 +53,19 @@ class MatchProvider extends ChangeNotifier {
 
   // History loading
   bool _isHistoryLoading = false;
+  bool _isHistoryLoaded = false;
   bool get isHistoryLoading => _isHistoryLoading;
+  bool get isHistoryLoaded => _isHistoryLoaded;
+  File? _historyRefImage;
+  File? _historySelfieImage;
   String? _lastResultUrl;
 
   // Getters
   File? get referenceImage => _referenceImage;
   File? get selfieImage => _selfieImage;
   File? get resultImage => _resultImage;
+  File? get historyRefImage => _historyRefImage;
+  File? get historySelfieImage => _historySelfieImage;
   MakeupAnalysis? get analysis => _analysis;
   bool get isAnalyzing => _isAnalyzing;
   bool get isGenerating => _isGenerating;
@@ -145,6 +151,8 @@ class MatchProvider extends ChangeNotifier {
   }
 
   Future<void> _loadHistory() async {
+    _isHistoryLoaded = false;
+    notifyListeners();
     final uid = userId;
     if (uid == null) return;
     try {
@@ -179,10 +187,17 @@ class MatchProvider extends ChangeNotifier {
         );
       // Cache images async
       _cacheHistoryImages();
+      _isHistoryLoaded = true;
       notifyListeners();
     } catch (e) {
+      _isHistoryLoaded = true;
       debugPrint('load history error: $e');
     }
+  }
+
+  Future<void> refreshHistory() async {
+    _history.clear();
+    await _loadHistory();
   }
 
   Future<void> _cacheHistoryImages() async {
@@ -478,16 +493,16 @@ class MatchProvider extends ChangeNotifier {
 
   void loadHistoryResult(MatchResult result) {
     _isHistoryLoading = true;
+    _historyRefImage = result.referenceImagePath != null
+        ? File(result.referenceImagePath!)
+        : null;
+    _historySelfieImage = result.selfieImagePath != null
+        ? File(result.selfieImagePath!)
+        : null;
     _resultImage = result.resultImagePath != null
         ? File(result.resultImagePath!)
         : null;
     _analysis = result.analysis;
-    _referenceImage = result.referenceImagePath != null
-        ? File(result.referenceImagePath!)
-        : null;
-    _selfieImage = result.selfieImagePath != null
-        ? File(result.selfieImagePath!)
-        : null;
     _lastResultUrl = result.resultImageUrl;
     _isAnalyzing = false;
     _isGenerating = false;

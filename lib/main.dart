@@ -7,7 +7,6 @@ import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/analysis_screen.dart';
 import 'screens/login_screen.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,21 +53,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-  String _version = '';
   final _pages = const [HomeScreen(), AnalysisScreen(), HistoryScreen()];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadVersion();
-  }
-
-  Future<void> _loadVersion() async {
-    try {
-      final info = await PackageInfo.fromPlatform();
-      if (mounted) setState(() => _version = 'v${info.version}+${info.buildNumber}');
-    } catch (_) {}
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,66 +71,87 @@ class _MainShellState extends State<MainShell> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bgColor,
-      body: _pages[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFCEEE9),
+              Color(0xFFFDF6F3),
+              Color(0xFFFBF0EC),
+            ],
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              child: BottomNavigationBar(
-                currentIndex: _currentIndex,
-                onTap: (i) => setState(() => _currentIndex = i),
-                backgroundColor: Colors.transparent,
-                selectedItemColor: AppColors.primary,
-                unselectedItemColor: AppColors.neutral400,
-                type: BottomNavigationBarType.fixed,
-                elevation: 0,
-                selectedFontSize: 11,
-                unselectedFontSize: 11,
-                selectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                ),
-                unselectedLabelStyle: const TextStyle(letterSpacing: 0.3),
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.face_retouching_natural_outlined, size: 24),
-                    activeIcon: Icon(Icons.face_retouching_natural, size: 24),
-                    label: '仿妆',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.visibility_outlined, size: 24),
-                    activeIcon: Icon(Icons.visibility, size: 24),
-                    label: '分析',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.history_outlined, size: 24),
-                    activeIcon: Icon(Icons.history, size: 24),
-                    label: '历史',
-                  ),
-                ],
-              ),
-            ),
-            if (_version.isNotEmpty)
+        child: SafeArea(
+          child: Stack(
+            children: [
               Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom > 0 ? 2 : 6),
-                child: Text(_version, style: const TextStyle(fontSize: 10, color: AppColors.neutral300)),
+                padding: const EdgeInsets.only(bottom: 100),
+                child: _pages[_currentIndex],
               ),
-          ],
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBottomNav(),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      padding: const EdgeInsets.only(top: 12, bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _navItem(Icons.brush_outlined, '仿妆', 0),
+          _navItem(Icons.remove_red_eye_outlined, '分析', 1),
+          _navItem(Icons.history_toggle_off, '历史', 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _navItem(IconData icon, String label, int index) {
+    final active = _currentIndex == index;
+    final color = active ? AppColors.primary : AppColors.neutral400;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: active
+                ? BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.navActiveBg.withValues(alpha: 0.6),
+                  )
+                : null,
+            child: Icon(icon, size: 24, color: color),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }
