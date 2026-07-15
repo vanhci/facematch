@@ -25,7 +25,7 @@ class ResultScreen extends StatelessWidget {
       final resFrame = await resCodec.getNextFrame();
       final resImg = resFrame.image;
 
-      final refImage = provider.referenceImage;
+      final refImage = provider.historyRefImage ?? provider.referenceImage;
       ui.Image? refImg;
       if (refImage != null) {
         final refCodec = await ui.instantiateImageCodec(await refImage.readAsBytes());
@@ -53,13 +53,13 @@ class ResultScreen extends StatelessWidget {
         final picture = recorder.endRecording();
         final composite = await picture.toImage(totalW.toInt(), targetH.toInt());
         final byteData = await composite.toByteData(format: ui.ImageByteFormat.png);
-        refImg.dispose(); resImg.dispose(); composite.dispose();
+        resImg.dispose(); composite.dispose();
+        refImg.dispose();
         path = '${dir.path}/share_$ts.png';
         await File(path).writeAsBytes(byteData!.buffer.asUint8List());
       } else {
         resImg.dispose();
       }
-      refImg?.dispose();
       final box = context.findRenderObject() as RenderBox?;
       final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
       await Share.shareXFiles([XFile(path)], text: '颜摹仿妆', sharePositionOrigin: rect);
@@ -97,8 +97,9 @@ class ResultScreen extends StatelessWidget {
                 Stack(
                   children: [
                     ComparisonSlider(
-                      beforeImage: provider.historyRefImage ?? provider.historySelfieImage ?? provider.selfieImage ?? provider.referenceImage,
-                      beforeLabel: provider.historySelfieImage != null ? '原图' : provider.selfieImage != null ? '原图' : '参考妆',
+                      beforeImage: provider.comparisonBeforeImage,
+                      afterImage: provider.resultImage,
+                      beforeLabel: provider.comparisonBeforeLabel,
                       afterLabel: '仿妆',
                     ),
                     if (provider.isHistoryLoading || provider.isGenerating)

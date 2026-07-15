@@ -17,19 +17,30 @@ class MatchProvider extends ChangeNotifier {
 
   MatchProvider({MakeupApi? api}) : _api = api ?? ApiService() {
     // Listen to auth changes to reload data on login/logout
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      if (data.session != null) {
-        _loadUsage();
-        _loadHistory();
-      } else {
-        _history.clear();
-        notifyListeners();
-      }
-    });
+    // 防御：测试环境下 Supabase 可能未初始化，跳过监听避免崩溃
+    try {
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        if (data.session != null) {
+          _loadUsage();
+          _loadHistory();
+        } else {
+          _history.clear();
+          notifyListeners();
+        }
+      });
+    } catch (_) {
+      // Supabase 未初始化（如纯单元测试环境），忽略监听
+    }
   }
 
   // User
-  String? get userId => Supabase.instance.client.auth.currentUser?.id;
+  String? get userId {
+    try {
+      return Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      return null;
+    }
+  }
 
   // Images
   File? _referenceImage;
@@ -72,6 +83,12 @@ class MatchProvider extends ChangeNotifier {
   String? get error => _error;
   List<MatchResult> get history => List.unmodifiable(_history);
   bool get canMatch => _referenceImage != null && _selfieImage != null;
+
+  /// 对比图（仿妆前）必须是用户自拍原图；只有历史记录无自拍时才退回参考妆
+  File? get comparisonBeforeImage =>
+      (_selfieImage ?? _historySelfieImage) ?? _historyRefImage ?? _referenceImage;
+  /// 对比图标签：有自拍标“原图”，否则标“参考妆”
+  String get comparisonBeforeLabel => (_selfieImage ?? _historySelfieImage) != null ? '原图' : '参考妆';
   int get remaining {
     final daily = max(0, _dailyLimit - _dailyUsage);
     return daily + _bonusCredits;
@@ -180,6 +197,7 @@ class MatchProvider extends ChangeNotifier {
               resultImagePath: null,
               resultImageUrl: j['result_image_url'] as String?,
               referenceImageUrl: j['reference_image_url'] as String?,
+              selfieImageUrl: j['selfie_image_url'] as String?,
               analysis: analysis,
               status: Status.completed,
             );
@@ -203,21 +221,25 @@ class MatchProvider extends ChangeNotifier {
   Future<void> _cacheHistoryImages() async {
     for (int i = 0; i < _history.length; i++) {
       final item = _history[i];
-      String? refPath, resPath;
+      String? refPath, resPath, selfiePath;
       if (item.referenceImageUrl != null && item.referenceImageUrl!.isNotEmpty) {
         refPath = await _cacheImage(item.referenceImageUrl!, item.id, 'ref');
+      }
+      if (item.selfieImageUrl != null && item.selfieImageUrl!.isNotEmpty) {
+        selfiePath = await _cacheImage(item.selfieImageUrl!, item.id, 'selfie');
       }
       if (item.resultImageUrl != null && item.resultImageUrl!.isNotEmpty) {
         resPath = await _cacheImage(item.resultImageUrl!, item.id, 'res');
       }
-      if (refPath != null || resPath != null) {
+      if (refPath != null || resPath != null || selfiePath != null) {
         _history[i] = MatchResult(
           id: item.id, createdAt: item.createdAt,
           referenceImagePath: refPath ?? item.referenceImagePath,
-          selfieImagePath: item.selfieImagePath,
+          selfieImagePath: selfiePath ?? item.selfieImagePath,
           resultImagePath: resPath ?? item.resultImagePath,
           resultImageUrl: item.resultImageUrl,
           referenceImageUrl: item.referenceImageUrl,
+          selfieImageUrl: item.selfieImageUrl,
           analysis: item.analysis, status: item.status,
         );
         notifyListeners();
@@ -305,6 +327,9 @@ class MatchProvider extends ChangeNotifier {
     _resultImage = null;
     _analysis = null;
     _error = null;
+    // 清空历史残留图，避免用历史记录的参考妆/自拍污染本次对比
+    _historyRefImage = null;
+    _historySelfieImage = null;
     notifyListeners();
 
     try {
@@ -407,6 +432,7 @@ class MatchProvider extends ChangeNotifier {
     if (uid == null || _analysis == null) return;
     try {
       String? refUrl;
+      String? selfieUrl;
 
       // Upload reference image to backend
       if (_referenceImage != null) {
@@ -421,12 +447,25 @@ class MatchProvider extends ChangeNotifier {
         refUrl = uploadData['url'] as String?;
       }
 
+      // Upload selfie (原图) so history comparison shows the real before image
+      if (_selfieImage != null) {
+        final formData = dio.FormData.fromMap({
+          'file': await dio.MultipartFile.fromFile(
+            _selfieImage!.path,
+            filename: 'selfie.jpg',
+          ),
+        });
+        final uploadResp = await ApiService().dio.post('/api/v2/upload', data: formData);
+        final uploadData = uploadResp.data as Map<String, dynamic>;
+        selfieUrl = uploadData['url'] as String?;
+      }
+
       await ApiService().dio.post(
         '/api/v2/history',
         data: {
           'user_id': uid,
           'reference_image_url': refUrl ?? '',
-          'selfie_image_url': '',
+          'selfie_image_url': selfieUrl ?? '',
           'result_image_url': _lastResultUrl ?? '',
           'analysis': _analysis!.toCategoryMap(),
         },
@@ -513,6 +552,21 @@ class MatchProvider extends ChangeNotifier {
   void clearHistoryLoading() {
     _isHistoryLoading = false;
     notifyListeners();
+  }
+
+  // ─── 测试辅助 ───────────────────────────
+  @visibleForTesting
+  void setImagesForTest({File? referenceImage, File? selfieImage}) {
+    if (referenceImage != null) _referenceImage = referenceImage;
+    if (selfieImage != null) _selfieImage = selfieImage;
+    notifyListeners();
+  }
+
+  /// 包装“分析→生成”的完整流程，供测试与 UI 调用
+  Future<void> startMatch() async {
+    await analyzeOnly();
+    if (_isCancelled) return;
+    await generateTransfer();
   }
 
   Future<void> signOut() async {

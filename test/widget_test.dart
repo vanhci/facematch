@@ -9,17 +9,20 @@ import 'package:flutter_test/flutter_test.dart';
 class _FakeApi implements MakeupApi {
   final Completer<MakeupAnalysis> analysisCompleter =
       Completer<MakeupAnalysis>();
-  final Completer<String> transferCompleter = Completer<String>();
+  final Completer<MakeupTransferResult> transferCompleter =
+      Completer<MakeupTransferResult>();
 
   @override
-  Future<MakeupAnalysis> analyzeMakeup(File referenceImage) {
+  Future<MakeupAnalysis> analyzeMakeup(File referenceImage,
+      [String userId = '']) {
     return analysisCompleter.future;
   }
 
   @override
-  Future<String> transferMakeup({
+  Future<MakeupTransferResult> transferMakeup({
     required File targetImage,
     required String analysis,
+    String userId = '',
   }) {
     return transferCompleter.future;
   }
@@ -81,7 +84,7 @@ void main() {
     expect(provider.isAnalyzing, isFalse);
     expect(provider.isGenerating, isTrue);
 
-    api.transferCompleter.complete(result.path);
+    api.transferCompleter.complete(MakeupTransferResult(filePath: result.path));
     await matchFuture;
 
     expect(provider.isAnalyzing, isFalse);
@@ -92,7 +95,7 @@ void main() {
     expect(states, contains('false:false'));
   });
 
-  test('startMatch inserts completed result into history', () async {
+  test('startMatch 生成完成并设置结果图', () async {
     final api = _FakeApi();
     final provider = MatchProvider(api: api);
     final reference = await _createTempImage('reference');
@@ -105,14 +108,54 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     api.analysisCompleter.complete(MakeupAnalysis.sample);
     await Future<void>.delayed(Duration.zero);
-    api.transferCompleter.complete(result.path);
+    api.transferCompleter.complete(MakeupTransferResult(filePath: result.path));
     await matchFuture;
 
-    expect(provider.history, hasLength(1));
-    expect(provider.history.first.status, Status.completed);
-    expect(provider.history.first.referenceImagePath, reference.path);
-    expect(provider.history.first.selfieImagePath, selfie.path);
-    expect(provider.history.first.resultImagePath, result.path);
-    expect(provider.history.first.analysis?.base, MakeupAnalysis.sample.base);
+    expect(provider.isAnalyzing, isFalse);
+    expect(provider.isGenerating, isFalse);
+    expect(provider.resultImage?.path, result.path);
+    expect(provider.comparisonBeforeImage?.path, selfie.path);
+    expect(provider.comparisonBeforeLabel, '原图');
+  });
+
+  test('对比图优先用自拍原图，不被历史参考妆覆盖（回归）', () async {
+    final provider = MatchProvider(api: _FakeApi());
+    final reference = await _createTempImage('reference');
+    final selfie = await _createTempImage('selfie');
+    final historyRef = await _createTempImage('history_ref');
+
+    provider.setImagesForTest(referenceImage: reference, selfieImage: selfie);
+
+    // 模拟看过一条历史记录（参考妆被载入）
+    provider.loadHistoryResult(MatchResult(
+      id: 'h1',
+      createdAt: DateTime.now(),
+      referenceImagePath: historyRef.path,
+      analysis: MakeupAnalysis.sample,
+      status: Status.completed,
+    ));
+
+    // 关键断言：原图必须是用户自拍，不能是历史参考妆
+    expect(provider.comparisonBeforeImage?.path, selfie.path);
+    expect(provider.comparisonBeforeLabel, '原图');
+  });
+
+  test('无自拍时对比图退回参考妆并正确标注', () async {
+    final provider = MatchProvider(api: _FakeApi());
+    final reference = await _createTempImage('reference');
+    final historyRef = await _createTempImage('history_ref');
+
+    provider.setImagesForTest(referenceImage: reference);
+
+    provider.loadHistoryResult(MatchResult(
+      id: 'h2',
+      createdAt: DateTime.now(),
+      referenceImagePath: historyRef.path,
+      analysis: MakeupAnalysis.sample,
+      status: Status.completed,
+    ));
+
+    expect(provider.comparisonBeforeImage?.path, historyRef.path);
+    expect(provider.comparisonBeforeLabel, '参考妆');
   });
 }
