@@ -55,8 +55,7 @@ class _ComparisonSliderState extends State<ComparisonSlider> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final height = width * 1.2; // 5:6 aspect ratio
-
+        final height = width / 0.72; // match home page card aspect ratio
         return ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: SizedBox(

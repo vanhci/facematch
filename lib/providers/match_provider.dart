@@ -86,9 +86,13 @@ class MatchProvider extends ChangeNotifier {
 
   /// 对比图（仿妆前）必须是用户自拍原图；只有历史记录无自拍时才退回参考妆
   File? get comparisonBeforeImage =>
-      (_selfieImage ?? _historySelfieImage) ?? _historyRefImage ?? _referenceImage;
+      (_selfieImage ?? _historySelfieImage) ??
+      _historyRefImage ??
+      _referenceImage;
+
   /// 对比图标签：有自拍标“原图”，否则标“参考妆”
-  String get comparisonBeforeLabel => (_selfieImage ?? _historySelfieImage) != null ? '原图' : '参考妆';
+  String get comparisonBeforeLabel =>
+      (_selfieImage ?? _historySelfieImage) != null ? '原图' : '参考妆';
   int get remaining {
     final daily = max(0, _dailyLimit - _dailyUsage);
     return daily + _bonusCredits;
@@ -113,7 +117,9 @@ class MatchProvider extends ChangeNotifier {
   }
 
   Future<String> _cacheDir() async {
-    final dir = Directory('${(await getApplicationCacheDirectory()).path}/facematch_history');
+    final dir = Directory(
+      '${(await getApplicationCacheDirectory()).path}/facematch_history',
+    );
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir.path;
   }
@@ -124,7 +130,10 @@ class MatchProvider extends ChangeNotifier {
       final cacheDir = await _cacheDir();
       final path = '$cacheDir/${id}_$type.png';
       if (await File(path).exists()) return path;
-      final resp = await ApiService().dio.get(url, options: dio.Options(responseType: dio.ResponseType.bytes));
+      final resp = await ApiService().dio.get(
+        url,
+        options: dio.Options(responseType: dio.ResponseType.bytes),
+      );
       await File(path).writeAsBytes(resp.data as List<int>);
       return path;
     } catch (_) {
@@ -138,7 +147,8 @@ class MatchProvider extends ChangeNotifier {
       if (!await dir.exists()) return;
       final cutoff = DateTime.now().subtract(const Duration(days: 7));
       await for (final f in dir.list()) {
-        if (f is File && await f.lastModified().then((t) => t.isBefore(cutoff))) {
+        if (f is File &&
+            await f.lastModified().then((t) => t.isBefore(cutoff))) {
           await f.delete();
         }
       }
@@ -187,7 +197,9 @@ class MatchProvider extends ChangeNotifier {
               createdAt: () {
                 final raw = j['created_at'] as String? ?? '';
                 if (raw.isEmpty) return DateTime.now();
-                if (!raw.endsWith('Z') && raw.indexOf('+') < 0 && raw.lastIndexOf('-') <= 10) {
+                if (!raw.endsWith('Z') &&
+                    raw.indexOf('+') < 0 &&
+                    raw.lastIndexOf('-') <= 10) {
                   return DateTime.parse('${raw}Z').toLocal();
                 }
                 return DateTime.parse(raw).toLocal();
@@ -222,7 +234,8 @@ class MatchProvider extends ChangeNotifier {
     for (int i = 0; i < _history.length; i++) {
       final item = _history[i];
       String? refPath, resPath, selfiePath;
-      if (item.referenceImageUrl != null && item.referenceImageUrl!.isNotEmpty) {
+      if (item.referenceImageUrl != null &&
+          item.referenceImageUrl!.isNotEmpty) {
         refPath = await _cacheImage(item.referenceImageUrl!, item.id, 'ref');
       }
       if (item.selfieImageUrl != null && item.selfieImageUrl!.isNotEmpty) {
@@ -233,14 +246,16 @@ class MatchProvider extends ChangeNotifier {
       }
       if (refPath != null || resPath != null || selfiePath != null) {
         _history[i] = MatchResult(
-          id: item.id, createdAt: item.createdAt,
+          id: item.id,
+          createdAt: item.createdAt,
           referenceImagePath: refPath ?? item.referenceImagePath,
           selfieImagePath: selfiePath ?? item.selfieImagePath,
           resultImagePath: resPath ?? item.resultImagePath,
           resultImageUrl: item.resultImageUrl,
           referenceImageUrl: item.referenceImageUrl,
           selfieImageUrl: item.selfieImageUrl,
-          analysis: item.analysis, status: item.status,
+          analysis: item.analysis,
+          status: item.status,
         );
         notifyListeners();
       }
@@ -442,7 +457,10 @@ class MatchProvider extends ChangeNotifier {
             filename: 'reference.jpg',
           ),
         });
-        final uploadResp = await ApiService().dio.post('/api/v2/upload', data: formData);
+        final uploadResp = await ApiService().dio.post(
+          '/api/v2/upload',
+          data: formData,
+        );
         final uploadData = uploadResp.data as Map<String, dynamic>;
         refUrl = uploadData['url'] as String?;
       }
@@ -455,7 +473,10 @@ class MatchProvider extends ChangeNotifier {
             filename: 'selfie.jpg',
           ),
         });
-        final uploadResp = await ApiService().dio.post('/api/v2/upload', data: formData);
+        final uploadResp = await ApiService().dio.post(
+          '/api/v2/upload',
+          data: formData,
+        );
         final uploadData = uploadResp.data as Map<String, dynamic>;
         selfieUrl = uploadData['url'] as String?;
       }

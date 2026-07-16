@@ -303,11 +303,12 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
         makeup_desc = hair_desc = accessory_desc = face_structure = ""
 
     prompt_parts = ["Apply the reference makeup to this person naturally."]
+    prompt_parts.append("CRITICAL: Do NOT change this person's identity. Keep the EXACT same face shape, eye shape, nose, mouth, chin, jawline, skin texture, and facial proportions.")
     if face_structure:
         prompt_parts.append(f"Preserve this face structure exactly: {face_structure}.")
     else:
         prompt_parts.append("Keep the original skin color, facial features, expression, and background unchanged.")
-    prompt_parts.append("Only the makeup style should change — subtle and natural.")
+    prompt_parts.append("Only the makeup colors and placement should change — subtle and natural.")
     if makeup_desc:
         prompt_parts.append(f"Makeup reference: {makeup_desc}")
     if hair_desc:
@@ -315,9 +316,9 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     if accessory_desc:
         prompt_parts.append(f"Accessories: {accessory_desc[:200]}")
     if not hair_desc and not accessory_desc:
-        prompt_parts.append("Keep clothing, background, and identity completely unchanged.")
+        prompt_parts.append("Keep background and clothing completely unchanged.")
     else:
-        prompt_parts.append("Keep facial features, background, and clothing unchanged.")
+        prompt_parts.append("Keep background and clothing unchanged.")
     prompt_text = "\n".join(prompt_parts)
     image_model = os.environ.get("IMAGE_MODEL", "dashscope")
     print(f"[transfer] Using model: {image_model}")
@@ -328,6 +329,8 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
         result = await _transfer_qwen_edit(data, prompt_text)
     elif image_model == "gpt-image-2":
         result = await _transfer_gpt_image2(data, prompt_text, makeup_desc, hair_desc, accessory_desc)
+    elif image_model == "wan2.7-image":
+        result = await _transfer_dashscope(data_uri, prompt_text, "wan2.7-image")
     else:
         result = await _transfer_dashscope(data_uri, prompt_text)
 
@@ -338,22 +341,29 @@ async def transfer(selfie_image: UploadFile = File(...), analysis: str = Form(..
     return result
 
 
-async def _transfer_dashscope(data_uri: str, prompt_text: str):
-    """Use DashScope wan2.7-image-pro for transfer.
-    Uses sync SDK via asyncio.to_thread to avoid blocking the event loop."""
+async def _transfer_dashscope(data_uri: str, prompt_text: str, model_name: str = "wan2.7-image-pro"):
+    """Use DashScope wan2.7-image(-pro) for transfer with denoise_strength.
+    Uses sync SDK via asyncio.to_thread."""
     from dashscope import MultiModalConversation
     messages = [{"role": "user", "content": [{"image": data_uri}, {"text": prompt_text}]}]
-    print(f"[_transfer_dashscope] Calling wan2.7-image-pro via to_thread")
+    print(f"[_transfer_dashscope] Calling {model_name} via to_thread")
+    denoise = 0.15 if "pro" in model_name else 0.2
     resp = await asyncio.to_thread(
         MultiModalConversation.call,
-        model="wan2.7-image-pro", messages=messages, api_key=KEY,
-        parameters={"size": "1328*1328", "n": 1, "watermark": False, "denoise_strength": 0.1}
+        model=model_name, messages=messages, api_key=KEY,
+        parameters={"size": "1024*1024", "n": 1, "watermark": False, "denoise_strength": denoise}
     )
     result = resp if isinstance(resp, dict) else resp.__dict__
     if result.get("status_code") != 200:
         raise HTTPException(500, f"生成失败: {result.get('message', 'unknown')}")
     img_url = result["output"]["choices"][0]["message"]["content"][0]["image"]
-    return {"result_url": img_url}
+    # Save via file-based OSS proxy (same as qwen-edit)
+    import uuid
+    tid = str(uuid.uuid4())
+    os.makedirs("uploads", exist_ok=True)
+    with open(f"uploads/_oss_{tid}.url", "w") as f:
+        f.write(img_url)
+    return {"result_image_base64": "", "result_url": f"/oss/{tid}", "result_url_oss": img_url}
 
 
 async def _transfer_minimax(original_data: bytes, prompt_text: str):

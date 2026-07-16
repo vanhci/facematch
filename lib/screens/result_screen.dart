@@ -28,7 +28,9 @@ class ResultScreen extends StatelessWidget {
       final refImage = provider.historyRefImage ?? provider.referenceImage;
       ui.Image? refImg;
       if (refImage != null) {
-        final refCodec = await ui.instantiateImageCodec(await refImage.readAsBytes());
+        final refCodec = await ui.instantiateImageCodec(
+          await refImage.readAsBytes(),
+        );
         final refFrame = await refCodec.getNextFrame();
         refImg = refFrame.image;
       }
@@ -43,17 +45,44 @@ class ResultScreen extends StatelessWidget {
 
         final recorder = ui.PictureRecorder();
         final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, totalW, targetH));
-        canvas.drawRect(Rect.fromLTWH(0, 0, totalW, targetH), Paint()..color = Colors.white);
+        canvas.drawRect(
+          Rect.fromLTWH(0, 0, totalW, targetH),
+          Paint()..color = Colors.white,
+        );
 
-        canvas.drawImageRect(refImg, Rect.fromLTWH(0, 0, refImg.width.toDouble(), refImg.height.toDouble()),
-            Rect.fromLTWH(0, 0, refW.toDouble(), targetH), Paint());
-        canvas.drawImageRect(resImg, Rect.fromLTWH(0, 0, resImg.width.toDouble(), resImg.height.toDouble()),
-            Rect.fromLTWH(refW + gap, 0, resW.toDouble(), targetH), Paint());
+        canvas.drawImageRect(
+          refImg,
+          Rect.fromLTWH(
+            0,
+            0,
+            refImg.width.toDouble(),
+            refImg.height.toDouble(),
+          ),
+          Rect.fromLTWH(0, 0, refW.toDouble(), targetH),
+          Paint(),
+        );
+        canvas.drawImageRect(
+          resImg,
+          Rect.fromLTWH(
+            0,
+            0,
+            resImg.width.toDouble(),
+            resImg.height.toDouble(),
+          ),
+          Rect.fromLTWH(refW + gap, 0, resW.toDouble(), targetH),
+          Paint(),
+        );
 
         final picture = recorder.endRecording();
-        final composite = await picture.toImage(totalW.toInt(), targetH.toInt());
-        final byteData = await composite.toByteData(format: ui.ImageByteFormat.png);
-        resImg.dispose(); composite.dispose();
+        final composite = await picture.toImage(
+          totalW.toInt(),
+          targetH.toInt(),
+        );
+        final byteData = await composite.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
+        resImg.dispose();
+        composite.dispose();
         refImg.dispose();
         path = '${dir.path}/share_$ts.png';
         await File(path).writeAsBytes(byteData!.buffer.asUint8List());
@@ -61,12 +90,21 @@ class ResultScreen extends StatelessWidget {
         resImg.dispose();
       }
       final box = context.findRenderObject() as RenderBox?;
-      final rect = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-      await Share.shareXFiles([XFile(path)], text: '颜摹仿妆', sharePositionOrigin: rect);
+      final rect = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+      await Share.shareXFiles(
+        [XFile(path)],
+        text: '颜摹仿妆',
+        sharePositionOrigin: rect,
+      );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('分享失败: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('分享失败: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -77,7 +115,13 @@ class ResultScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: Text('仿妆效果', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: AppColors.neutral800)),
+        title: Text(
+          '仿妆效果',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.neutral800,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: AppColors.bgColor,
         elevation: 0,
@@ -110,7 +154,9 @@ class ResultScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppRadius.card),
                           ),
                           child: const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -119,32 +165,48 @@ class ResultScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: _ActionCard(
-                      icon: Icons.save_outlined, label: '保存', color: AppColors.primary,
-                      onTap: () async {
-                        if (provider.resultImage != null) {
-                          try {
-                            await ImageGallerySaver.saveFile(provider.resultImage!.path);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('已保存到相册'), behavior: SnackBarBehavior.floating),
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.save_outlined,
+                        label: '保存',
+                        color: AppColors.primary,
+                        onTap: () async {
+                          if (provider.resultImage != null) {
+                            try {
+                              await ImageGallerySaver.saveFile(
+                                provider.resultImage!.path,
                               );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('保存失败: $e'), behavior: SnackBarBehavior.floating),
-                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('已保存到相册'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('保存失败: $e'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
                             }
                           }
-                        }
-                      },
-                    )),
+                        },
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: _ActionCard(
-                      icon: Icons.ios_share_outlined, label: '分享', color: AppColors.primary,
-                      onTap: () => _share(context, provider),
-                    )),
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.ios_share_outlined,
+                        label: '分享',
+                        color: AppColors.primary,
+                        onTap: () => _share(context, provider),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -167,7 +229,12 @@ class _ActionCard extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _ActionCard({required this.icon, required this.label, required this.color, required this.onTap});
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +251,14 @@ class _ActionCard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 6),
-            Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
@@ -227,7 +301,11 @@ class _ReferenceCard extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.45),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                 ),
               ),
             ),
@@ -255,13 +333,25 @@ class _ReferenceCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.iconBg),
-                child: Image.file(referenceImage, width: 48, height: 48, fit: BoxFit.cover),
+                child: Image.file(
+                  referenceImage,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(
-                child: Text('分析基于此参考妆容', style: TextStyle(fontSize: 13, color: AppColors.neutral500)),
+                child: Text(
+                  '分析基于此参考妆容',
+                  style: TextStyle(fontSize: 13, color: AppColors.neutral500),
+                ),
               ),
-              Icon(Icons.zoom_in_rounded, size: 18, color: AppColors.neutral300),
+              Icon(
+                Icons.zoom_in_rounded,
+                size: 18,
+                color: AppColors.neutral300,
+              ),
             ],
           ),
         ),

@@ -110,7 +110,9 @@ class ApiService implements MakeupApi {
 
       // Fallback: download from URL
       if (resultUrl == null) throw Exception('No result URL from backend');
-      final downloadUrl = resultUrl.startsWith('/') ? '$_baseUrl$resultUrl' : resultUrl;
+      final downloadUrl = resultUrl.startsWith('/')
+          ? '$_baseUrl$resultUrl'
+          : resultUrl;
       final imgResp = await Dio().get(
         downloadUrl,
         options: Options(

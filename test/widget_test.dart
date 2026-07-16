@@ -13,8 +13,10 @@ class _FakeApi implements MakeupApi {
       Completer<MakeupTransferResult>();
 
   @override
-  Future<MakeupAnalysis> analyzeMakeup(File referenceImage,
-      [String userId = '']) {
+  Future<MakeupAnalysis> analyzeMakeup(
+    File referenceImage, [
+    String userId = '',
+  ]) {
     return analysisCompleter.future;
   }
 
@@ -127,13 +129,15 @@ void main() {
     provider.setImagesForTest(referenceImage: reference, selfieImage: selfie);
 
     // 模拟看过一条历史记录（参考妆被载入）
-    provider.loadHistoryResult(MatchResult(
-      id: 'h1',
-      createdAt: DateTime.now(),
-      referenceImagePath: historyRef.path,
-      analysis: MakeupAnalysis.sample,
-      status: Status.completed,
-    ));
+    provider.loadHistoryResult(
+      MatchResult(
+        id: 'h1',
+        createdAt: DateTime.now(),
+        referenceImagePath: historyRef.path,
+        analysis: MakeupAnalysis.sample,
+        status: Status.completed,
+      ),
+    );
 
     // 关键断言：原图必须是用户自拍，不能是历史参考妆
     expect(provider.comparisonBeforeImage?.path, selfie.path);
@@ -147,13 +151,15 @@ void main() {
 
     provider.setImagesForTest(referenceImage: reference);
 
-    provider.loadHistoryResult(MatchResult(
-      id: 'h2',
-      createdAt: DateTime.now(),
-      referenceImagePath: historyRef.path,
-      analysis: MakeupAnalysis.sample,
-      status: Status.completed,
-    ));
+    provider.loadHistoryResult(
+      MatchResult(
+        id: 'h2',
+        createdAt: DateTime.now(),
+        referenceImagePath: historyRef.path,
+        analysis: MakeupAnalysis.sample,
+        status: Status.completed,
+      ),
+    );
 
     expect(provider.comparisonBeforeImage?.path, historyRef.path);
     expect(provider.comparisonBeforeLabel, '参考妆');

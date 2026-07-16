@@ -98,34 +98,64 @@ class _HomeScreenState extends State<HomeScreen> {
         final hasRef = provider.referenceImage != null;
         final hasSelfie = provider.selfieImage != null;
         return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 120),
+          padding: const EdgeInsets.only(bottom: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 16),
-              _buildAppIcon(),
-              const SizedBox(height: 12),
-              const Text(
-                '颜摹',
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.brownText,
-                  letterSpacing: 2,
+              const SizedBox(height: 4),
+              // Horizontal header: icon + title + subtitle
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    _buildAppIcon(),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '颜摹',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.brownText,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(height: 1),
+                          Text(
+                            '看见你的妆 · 复制你的美',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.brownLight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => context.read<MatchProvider>().signOut(),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Icon(
+                          Icons.logout,
+                          size: 16,
+                          color: AppColors.neutral400,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                '看见你的妆 · 复制你的美',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.brownLight,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               _buildSectionLabel('参考妆容'),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _buildPhotoCard(
                 context: context,
                 isReference: true,
@@ -136,56 +166,74 @@ class _HomeScreenState extends State<HomeScreen> {
                 onClear: () => provider.clearReference(),
                 onPick: () => _showImagePicker(context, true),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               _buildDividerIcon(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               _buildSectionLabel('我的自拍'),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _buildPhotoCard(
                 context: context,
                 isReference: false,
                 hasImage: hasSelfie,
                 image: provider.selfieImage,
                 imageUrl: '',
-                label: '我的素颜',
+                label: '我的自拍',
                 onClear: () => provider.clearSelfie(),
                 onPick: () => _showImagePicker(context, false),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               if (provider.canMatch)
-                SizedBox(
-                  width: 320,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: provider.isAnalyzing || provider.isGenerating
-                        ? null
-                        : () => _runMatch(context, provider),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(27),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: provider.isAnalyzing || provider.isGenerating
+                          ? null
+                          : () => _runMatch(context, provider),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: AppColors.neutral200,
+                        disabledForegroundColor: Colors.white,
+                        elevation: 2,
+                        shadowColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      elevation: 0,
-                    ),
-                    child: provider.isAnalyzing || provider.isGenerating
-                        ? const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2.5,
+                      child: provider.isAnalyzing || provider.isGenerating
+                          ? const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.5,
+                                  ),
                                 ),
+                                SizedBox(width: 10),
+                                Text(
+                                  '分析中...',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              '妆容分析',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
-                              SizedBox(width: 10),
-                              Text('分析中...', style: TextStyle(fontSize: 16)),
-                            ],
-                          )
-                        : const Text('妆容分析',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            ),
+                    ),
                   ),
                 ),
               if (provider.error != null)
@@ -193,7 +241,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(
                     provider.error!,
-                    style: const TextStyle(color: AppColors.errorRed, fontSize: 13),
+                    style: const TextStyle(
+                      color: AppColors.errorRed,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
             ],
@@ -205,10 +256,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAppIcon() {
     return Container(
-      width: 84,
-      height: 84,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         gradient: AppColors.gradientRose,
         boxShadow: [
           BoxShadow(
@@ -219,7 +270,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: const Center(
-        child: Icon(Icons.face_retouching_natural, color: Colors.white, size: 40),
+        child: Icon(
+          Icons.face_retouching_natural,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
     );
   }
@@ -228,12 +283,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.local_florist, color: AppColors.iconPetal, size: 22),
-        const SizedBox(width: 8),
+        const Icon(Icons.local_florist, color: AppColors.iconPetal, size: 18),
+        const SizedBox(width: 6),
         Text(
           text,
           style: const TextStyle(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
             color: AppColors.brownDark,
           ),
@@ -246,24 +301,32 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        const Icon(Icons.favorite, color: AppColors.iconRose, size: 46),
+        const Icon(Icons.favorite, color: AppColors.iconRose, size: 36),
         Positioned(
-          left: 24,
-          top: 6,
+          left: 18,
+          top: 4,
           child: Transform.rotate(
             angle: -0.5,
-            child: const Icon(Icons.brush, color: AppColors.iconDark, size: 22),
+            child: const Icon(Icons.brush, color: AppColors.iconDark, size: 18),
           ),
         ),
         const Positioned(
-          right: 8,
-          top: 2,
-          child: Icon(Icons.auto_awesome, color: AppColors.iconSparkle, size: 14),
+          right: 6,
+          top: 1,
+          child: Icon(
+            Icons.auto_awesome,
+            color: AppColors.iconSparkle,
+            size: 11,
+          ),
         ),
         const Positioned(
-          left: 6,
-          bottom: 2,
-          child: Icon(Icons.auto_awesome, color: AppColors.iconSparkle, size: 10),
+          left: 4,
+          bottom: 1,
+          child: Icon(
+            Icons.auto_awesome,
+            color: AppColors.iconSparkle,
+            size: 8,
+          ),
         ),
       ],
     );
@@ -282,8 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: hasImage ? null : onPick,
       child: Container(
-        width: 320,
-        height: 380,
+        margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white, width: 3),
@@ -295,93 +357,116 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(21),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (hasImage && image != null)
-                Image.file(image, fit: BoxFit.cover)
-              else
-                Container(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add_photo_alternate_outlined,
-                            size: 48, color: AppColors.neutral400),
-                        const SizedBox(height: 8),
-                        Text(
-                          '点击选择${isReference ? '参考妆容' : '素颜自拍'}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.neutral400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              if (hasImage)
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: GestureDetector(
-                    onTap: onClear,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.75),
-                      ),
-                      child: const Icon(Icons.close, size: 16, color: Colors.black54),
-                    ),
-                  ),
-                ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  color: Colors.white.withValues(alpha: 0.55),
-                  alignment: Alignment.center,
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: AppColors.brownDark,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              if (isReference && hasImage)
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: GestureDetector(
-                    onTap: onPick,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
+        child: AspectRatio(
+          aspectRatio: 0.72,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(21),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (hasImage && image != null)
+                  Image.file(image, fit: BoxFit.cover)
+                else
+                  Container(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    child: Center(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.swap_horiz, size: 14, color: Colors.black54),
-                          SizedBox(width: 4),
-                          Text('换一张', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 48,
+                            color: AppColors.neutral400,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '点击选择${isReference ? '参考妆容' : '我的自拍'}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.neutral400,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
+                if (hasImage)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: onClear,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    color: Colors.white.withValues(alpha: 0.55),
+                    alignment: Alignment.center,
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: AppColors.brownDark,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
-            ],
+                if (hasImage)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: GestureDetector(
+                      onTap: onPick,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.swap_horiz,
+                              size: 14,
+                              color: Colors.black54,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              '换一张',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
